@@ -38,12 +38,7 @@ class GeminiProvider(BaseLLMProvider):
                 system_parts.append(m.content)
             elif m.role == "user":
                 last_user_message = m.content
-                if history and history[-1]["role"] == "model":
-                    history.append({"role": "user", "parts": [m.content]})
-                elif history:
-                    history.append({"role": "user", "parts": [m.content]})
-                else:
-                    history.append({"role": "user", "parts": [m.content]})
+                history.append({"role": "user", "parts": [m.content]})
             elif m.role == "assistant":
                 history.append({"role": "model", "parts": [m.content]})
 
