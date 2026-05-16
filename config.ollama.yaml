@@ -1,0 +1,11 @@
+llm:
+  provider: "ollama"
+  model: "gemma3:9b"     # or: llama3.2:3b, mistral:7b, phi4:14b
+  temperature: 0.3
+  max_tokens: 4000
+  timeout_seconds: 120
+  disable_thinking: false
+
+  ollama:
+    base_url: "http://localhost:11434"
+    keep_alive: "5m"

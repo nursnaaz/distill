@@ -41,8 +41,8 @@ server:
   # Allowed CORS origins for browser clients
   # Add your production domain here when deploying
   cors_origins:
-    - "http://localhost:5173"   # Vite dev server
-    - "http://localhost:3000"   # Alternative React dev port
+    - "http://localhost:5173" # Vite dev server
+    - "http://localhost:3000" # Alternative React dev port
 
   # Maximum file upload size in megabytes (audio, PDFs, transcripts)
   max_upload_size_mb: 50
@@ -76,6 +76,12 @@ llm:
 
   # Seconds to wait between retry attempts (exponential backoff applied internally)
   retry_delay_seconds: 2
+
+  # Set true for reasoning/thinking models (Qwen3, DeepSeek-R1, QwQ, etc.)
+  # Adds /no_think to every prompt so the model skips the <think> phase and
+  # outputs structured JSON directly, saving tokens and avoiding parse failures.
+  # Has no effect on standard models (Ollama, OpenAI, Anthropic, Gemini).
+  disable_thinking: false
 
   # ── Ollama (local, free) ──────────────────────────────────────────────────
   ollama:
@@ -301,16 +307,16 @@ evaluation:
   verdicts:
     - label: "Strong — interview ready"
       min_weighted_score: 4.2
-      cloudscape_type: "success"     # green
+      cloudscape_type: "success" # green
     - label: "Good — minor gaps to address"
       min_weighted_score: 3.0
-      cloudscape_type: "info"        # blue
+      cloudscape_type: "info" # blue
     - label: "Developing — needs more practice"
       min_weighted_score: 2.0
-      cloudscape_type: "warning"     # orange
+      cloudscape_type: "warning" # orange
     - label: "Foundational — revisit core concepts"
       min_weighted_score: 0.0
-      cloudscape_type: "error"       # red
+      cloudscape_type: "error" # red
 
   # ── Debrief Output Format ────────────────────────────────────────────────
   output:
@@ -372,12 +378,12 @@ prompts:
   # Mapping of prompt names to template file names
   # Each template is a Jinja2 .j2 file rendered with session context variables
   templates:
-    summary: "summary_system.j2"           # Summarise a lecture transcript
-    questions: "questions_system.j2"       # Generate MCQ + teach-it-back questions
-    concept_map: "concept_map_system.j2"   # Extract concepts and their relationships
+    summary: "summary_system.j2" # Summarise a lecture transcript
+    questions: "questions_system.j2" # Generate MCQ + teach-it-back questions
+    concept_map: "concept_map_system.j2" # Extract concepts and their relationships
     evaluate_mcq: "evaluate_mcq_system.j2" # Score a student's MCQ answer
-    evaluate_voice: "evaluate_voice_system.j2"  # Score a teach-it-back answer
-    confusion_map: "confusion_map_system.j2"    # Identify confused/weak concepts
+    evaluate_voice: "evaluate_voice_system.j2" # Score a teach-it-back answer
+    confusion_map: "confusion_map_system.j2" # Identify confused/weak concepts
 
 # ─── Export ──────────────────────────────────────────────────────────────────
 export:

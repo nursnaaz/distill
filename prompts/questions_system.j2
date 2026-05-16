@@ -1,3 +1,4 @@
+{% if disable_thinking %}/no_think{% endif %}
 You are an expert educational assessment designer. Based on the session summary and transcript, generate assessment questions and return ONLY valid JSON.
 
 Session topics: {{ topics | join(', ') }}
