@@ -4,7 +4,7 @@ llm:
   temperature: 0.3
   max_tokens: 4000
   timeout_seconds: 120
-  disable_thinking: false
+  no_think_mode: false
 
   ollama:
     base_url: "http://localhost:11434"

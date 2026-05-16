@@ -71,17 +71,17 @@ malformed JSON on occasion. Clean retry and salvage logic helps everyone.
 ### 6. `backend/core/config.py` + `backend/core/prompt_manager.py`
 **Problem:** `/no_think` was hardcoded in all prompt templates — fine for Qwen3 but
 meaningless noise for Ollama/OpenAI/Anthropic.  
-**Fix:** Added `disable_thinking: bool = False` to `LLMConfig`. `PromptManager` now
+**Fix:** Added `no_think_mode: bool = False` to `LLMConfig`. `PromptManager` now
 auto-injects this flag into every template render. Templates use
-`{% if disable_thinking %}/no_think{% endif %}` so it only appears when configured.  
+`{% if no_think_mode %}/no_think{% endif %}` so it only appears when configured.  
 **Impact on other setups:** Default is `false` — prompts are sent unchanged for all
-standard models. Qwen3 users set `disable_thinking: true` in `config.yaml`.
+standard models. Qwen3 users set `no_think_mode: true` in `config.yaml`.
 
 ---
 
 ### 7. `prompts/*.j2` (all 6 templates)
 **Problem:** `/no_think` was hardcoded — Qwen3-specific instruction visible to all models.  
-**Fix:** Replaced with `{% if disable_thinking %}/no_think{% endif %}` in all 6 files:
+**Fix:** Replaced with `{% if no_think_mode %}/no_think{% endif %}` in all 6 files:
 - `prompts/summary_system.j2`
 - `prompts/questions_system.j2`
 - `prompts/evaluate_mcq_system.j2`
@@ -90,13 +90,13 @@ standard models. Qwen3 users set `disable_thinking: true` in `config.yaml`.
 - `prompts/confusion_map_system.j2`
 
 **Impact on other setups:** No change for standard models. Qwen3 gets `/no_think` only
-when `disable_thinking: true` is set.
+when `no_think_mode: true` is set.
 
 ---
 
 ### 8. `config.example.yaml`
-**Problem:** No documentation for the `disable_thinking` option.  
-**Fix:** Added `disable_thinking: false` with full comment explaining when to use it.
+**Problem:** No documentation for the `no_think_mode` option.  
+**Fix:** Added `no_think_mode: false` with full comment explaining when to use it.
 
 ---
 
@@ -117,7 +117,7 @@ llm:
   temperature: 0.3
   max_tokens: 16000        # raised from 4000 — thinking tokens consume token budget fast
   timeout_seconds: 120
-  disable_thinking: true   # skip <think> phase for structured JSON tasks
+  no_think_mode: true   # skip <think> phase for structured JSON tasks
   lmstudio:
     base_url: "http://localhost:1234/v1"
     api_key: "lm-studio"
@@ -138,5 +138,5 @@ llm:
 | `<think>` stripping | No effect | Fixes JSON parse failures | No effect |
 | `{...}` extraction | Slightly more robust | Fixes prose-wrapped JSON | Slightly more robust |
 | Clean retry / salvage | More robust | More robust | More robust |
-| `disable_thinking` flag | `false` → no change | `true` → adds `/no_think` | `false` → no change |
+| `no_think_mode` flag | `false` → no change | `true` → adds `/no_think` | `false` → no change |
 | Frontend error message | Better | Better | Better |

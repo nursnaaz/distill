@@ -408,20 +408,20 @@ cp config.lmstudio.yaml config.yaml
 
 ### Thinking models (Qwen3, DeepSeek-R1, QwQ)
 
-If you use a reasoning/thinking model, add `disable_thinking: true` to your `config.yaml`:
+If you use a reasoning/thinking model, add `no_think_mode: true` to your `config.yaml`:
 
 ```yaml
 llm:
   provider: "lmstudio"
   model: "qwen/qwen3-4b-thinking-2507"
   max_tokens: 16000        # thinking models need more tokens — raise from default 4000
-  disable_thinking: true   # skips <think> phase, outputs JSON directly
+  no_think_mode: true   # skips <think> phase, outputs JSON directly
 ```
 
 Without this, the model spends thousands of tokens on internal reasoning before producing
 output, often hitting the token limit before the JSON is written — causing parse failures.
 
-> `disable_thinking` has **no effect** on standard models (Ollama, OpenAI, Anthropic, Gemini).
+> `no_think_mode` has **no effect** on standard models (Ollama, OpenAI, Anthropic, Gemini).
 > Leave it `false` or omit it entirely for those.
 
 ---
@@ -517,7 +517,7 @@ llm:
   timeout_seconds: 120     # per-request timeout
   chunk_size_chars: 20000  # ~5k tokens per map-reduce chunk
   chunk_overlap_chars: 500 # overlap between chunks to preserve context
-  disable_thinking: false  # set true for reasoning models (Qwen3, DeepSeek-R1, QwQ)
+  no_think_mode: false  # set true for reasoning models (Qwen3, DeepSeek-R1, QwQ)
                            # adds /no_think to prompts — no effect on standard models
 ```
 
@@ -633,7 +633,7 @@ Keepalive comments (`: keepalive`) are sent every second while waiting for LLM r
 
 | Symptom                                        | Cause                                     | Fix                                                                  |
 | ---------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------- |
-| `Failed to parse LLM JSON after 3 attempts`    | Thinking model filling tokens with `<think>` | Set `disable_thinking: true` and `max_tokens: 16000` in `config.yaml` |
+| `Failed to parse LLM JSON after 3 attempts`    | Thinking model filling tokens with `<think>` | Set `no_think_mode: true` and `max_tokens: 16000` in `config.yaml` |
 | Empty LLM responses with Qwen3 / DeepSeek      | `reasoning_content` stream field not collected | Already fixed in provider code — ensure you're on latest backend     |
 | `ModuleNotFoundError: structlog`               | Wrong Python / uvicorn being used         | Use `/usr/local/bin/python3 -m uvicorn` explicitly                   |
 | `SSLCertVerificationError` on Whisper download | Python 3.10 (python.org) missing CA certs | Run `"/Applications/Python 3.10/Install Certificates.command"`       |

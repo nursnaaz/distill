@@ -75,7 +75,7 @@ class PromptManager:
             raise ConfigError(f"Template file not found: {filename}")
 
         # Merge: auto-injected eval context + caller-supplied kwargs (caller wins)
-        context = {**self._eval_ctx, "disable_thinking": self.config.llm.disable_thinking, **kwargs}
+        context = {**self._eval_ctx, "no_think_mode": self.config.llm.no_think_mode, **kwargs}
         return template.render(**context)
 
     def reload(self) -> None:

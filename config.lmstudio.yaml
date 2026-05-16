@@ -4,7 +4,7 @@ llm:
   temperature: 0.3
   max_tokens: 16000
   timeout_seconds: 120
-  disable_thinking: true
+  no_think_mode: true
 
   lmstudio:
     base_url: "http://localhost:1234/v1"
