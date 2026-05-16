@@ -7,6 +7,9 @@ import uuid
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from models.requests import AnalyzeRequest
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -64,6 +67,7 @@ async def analyze_stream(body: AnalyzeRequest, request: Request) -> StreamingRes
                 },
             })
         except Exception as exc:
+            logger.exception("Analysis pipeline failed", error=str(exc))
             await emit({"stage": "error", "message": str(exc)})
 
     task = asyncio.create_task(_run())

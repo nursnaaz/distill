@@ -266,6 +266,7 @@ def _resolve_api_key(config: AppConfig) -> None:
     config.llm.api_key = (
         os.environ.get(env_var)
         or os.environ.get("DISTILL_LLM_API_KEY")
+        or config.llm.api_key  # fallback to value read from config.yaml
     )
 
 
@@ -311,12 +312,16 @@ def _build_config(raw: dict[str, Any]) -> AppConfig:
         oa = llm["openai"]
         cfg.llm.openai.base_url = oa.get("base_url", cfg.llm.openai.base_url)
         cfg.llm.openai.organization = oa.get("organization")
+        if cfg.llm.provider == "openai" and oa.get("api_key"):
+            cfg.llm.api_key = oa["api_key"]
+    if "gemini" in llm:
+        cfg.llm.gemini.base_url = llm["gemini"].get("base_url", cfg.llm.gemini.base_url)
+        if cfg.llm.provider == "gemini" and llm["gemini"].get("api_key"):
+            cfg.llm.api_key = llm["gemini"]["api_key"]
     if "anthropic" in llm:
         an = llm["anthropic"]
         cfg.llm.anthropic.base_url = an.get("base_url", cfg.llm.anthropic.base_url)
         cfg.llm.anthropic.api_version = an.get("api_version", cfg.llm.anthropic.api_version)
-    if "gemini" in llm:
-        cfg.llm.gemini.base_url = llm["gemini"].get("base_url", cfg.llm.gemini.base_url)
     if "langchain" in llm:
         lc = llm["langchain"]
         cfg.llm.langchain.backend = lc.get("backend", cfg.llm.langchain.backend)
