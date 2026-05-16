@@ -172,13 +172,35 @@ export default function InputPage() {
       return;
     }
 
+    if (ext === "pdf") {
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+          "pdfjs-dist/build/pdf.worker.mjs",
+          import.meta.url,
+        ).toString();
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+        const pages: string[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+        }
+        setTranscript(pages.join("\n\n").trim());
+      } catch {
+        setError("Could not read the PDF. Make sure it is a text-based PDF, not a scanned image.");
+      }
+      e.target.value = "";
+      return;
+    }
+
     if (ext === "docx") {
       try {
         const mammoth = (await import("mammoth")).default;
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         if (result.messages.length > 0) {
-          // Non-fatal warnings (e.g. unsupported formatting) — log, don't block
           console.warn("mammoth warnings:", result.messages);
         }
         setTranscript(result.value.trim());
@@ -221,7 +243,7 @@ export default function InputPage() {
         header={
           <Header
             variant="h1"
-            description="Paste a transcript or upload a file (.txt, .vtt, .docx). Distill extracts key concepts, builds a concept map, and generates an adaptive assessment."
+            description="Paste a transcript or upload a file (.txt, .vtt, .docx, .pdf). Distill extracts key concepts, builds a concept map, and generates an adaptive assessment."
           >
             Upload your class transcript
           </Header>
@@ -275,12 +297,12 @@ export default function InputPage() {
               disabled={isAnalyzing}
               iconName="upload"
             >
-              Upload file (.txt, .vtt, .docx)
+              Upload file (.txt, .vtt, .docx, .pdf)
             </Button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.vtt,.srt,.docx,.doc"
+              accept=".txt,.vtt,.srt,.docx,.doc,.pdf"
               style={{ display: "none" }}
               onChange={handleFileUpload}
             />

@@ -277,7 +277,7 @@ class TranscriptAnalyzer:
 
     async def _map_chunks(self, chunks: list[str], emit: Emit = _noop) -> list[str]:
         """Summarize each chunk; run up to 3 concurrently."""
-        sem = asyncio.Semaphore(3)
+        sem = asyncio.Semaphore(1)
 
         async def _one(i: int, chunk: str) -> str:
             async with sem:
