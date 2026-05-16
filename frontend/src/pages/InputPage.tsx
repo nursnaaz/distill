@@ -300,7 +300,7 @@ export default function InputPage() {
         <Button
           variant="primary"
           onClick={handleAnalyze}
-          disabled={isAnalyzing || transcript.trim().length < 100}
+          disabled={isAnalyzing}
           loading={isAnalyzing && progressSteps.length === 0}
           loadingText="Connecting…"
           iconAlign="right"

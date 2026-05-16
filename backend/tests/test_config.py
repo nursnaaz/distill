@@ -12,7 +12,7 @@ def test_load_config_defaults():
     assert isinstance(cfg, AppConfig)
     assert cfg.app_name == "Distill"
     assert cfg.llm.provider == "ollama"
-    assert cfg.llm.model == "gemma3:9b"
+    assert cfg.llm.model == "gemma3:4b"
 
 
 def test_get_config_returns_singleton():

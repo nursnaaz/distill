@@ -49,7 +49,7 @@ class LangChainConfig:
 @dataclass
 class LLMConfig:
     provider: str = "ollama"
-    model: str = "gemma3:9b"
+    model: str = "gemma3:4b"
     temperature: float = 0.3
     max_tokens: int = 4000
     timeout_seconds: int = 120

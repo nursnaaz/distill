@@ -24,7 +24,7 @@ def make_test_config() -> AppConfig:
     cfg.log_level = "WARNING"
 
     cfg.llm.provider = "ollama"
-    cfg.llm.model = "gemma3:9b"
+    cfg.llm.model = "gemma3:4b"
     cfg.llm.temperature = 0.3
     cfg.llm.max_tokens = 4000
     cfg.llm.retry_attempts = 1  # only 1 retry in tests for speed
