@@ -211,7 +211,7 @@ export default function InputPage() {
       await submitTranscript(transcript, studentName, sessionLabel || undefined);
       navigate("/summary");
     } catch {
-      setError("Analysis failed. Check that LM Studio server is running and the model is loaded.");
+      setError("Analysis failed. Check that your LLM provider is running and reachable (see config.yaml).");
     }
   };
 

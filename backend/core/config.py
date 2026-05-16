@@ -57,6 +57,7 @@ class LLMConfig:
     retry_delay_seconds: int = 2
     chunk_size_chars: int = 20000    # each map-reduce chunk fed to the LLM
     chunk_overlap_chars: int = 500   # overlap between adjacent chunks to avoid losing context at boundaries
+    no_think_mode: bool = False  # set true to send /no_think to reasoning models (Qwen3, DeepSeek-R1) — saves tokens by skipping the <think> phase
     api_key: str | None = None  # resolved from env vars
     ollama: OllamaConfig = field(default_factory=OllamaConfig)
     lmstudio: LMStudioConfig = field(default_factory=LMStudioConfig)
@@ -298,6 +299,7 @@ def _build_config(raw: dict[str, Any]) -> AppConfig:
     cfg.llm.retry_delay_seconds = llm.get("retry_delay_seconds", cfg.llm.retry_delay_seconds)
     cfg.llm.chunk_size_chars = llm.get("chunk_size_chars", cfg.llm.chunk_size_chars)
     cfg.llm.chunk_overlap_chars = llm.get("chunk_overlap_chars", cfg.llm.chunk_overlap_chars)
+    cfg.llm.no_think_mode = llm.get("no_think_mode", cfg.llm.no_think_mode)
 
     if "ollama" in llm:
         ol = llm["ollama"]

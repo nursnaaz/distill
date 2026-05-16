@@ -101,6 +101,8 @@ distill/
 ├── README.md                    ← This file
 ├── config.yaml                  ← Master config — edit this to change everything
 ├── config.example.yaml          ← Safe reference copy (never edited)
+├── config.ollama.yaml           ← Ready-to-use Ollama preset (copy to config.yaml)
+├── config.lmstudio.yaml         ← Ready-to-use LM Studio + Qwen3 preset (copy to config.yaml)
 ├── .env                         ← API keys (never commit)
 ├── .env.example                 ← Template — copy to .env
 ├── Makefile                     ← make dev / make install / make test
@@ -395,6 +397,42 @@ GOOGLE_API_KEY=AIza...
 
 ---
 
+## Switching Models / Providers
+
+Two ready-to-use preset files are included. To switch, copy the preset you want to `config.yaml` and restart the backend.
+
+**Switch to Ollama (local, free):**
+```bash
+cp config.ollama.yaml config.yaml
+```
+
+**Switch to LM Studio + Qwen3 (local, free):**
+```bash
+cp config.lmstudio.yaml config.yaml
+```
+
+**Switch to any cloud provider** — edit `config.yaml` directly (see [Cloud LLM setup](#setup--cloud-llm-openai--anthropic--gemini) above).
+
+### Thinking models (Qwen3, DeepSeek-R1, QwQ)
+
+If you use a reasoning/thinking model, add `no_think_mode: true` to your `config.yaml`:
+
+```yaml
+llm:
+  provider: "lmstudio"
+  model: "qwen/qwen3-4b-thinking-2507"
+  max_tokens: 16000        # thinking models need more tokens — raise from default 4000
+  no_think_mode: true   # skips <think> phase, outputs JSON directly
+```
+
+Without this, the model spends thousands of tokens on internal reasoning before producing
+output, often hitting the token limit before the JSON is written — causing parse failures.
+
+> `no_think_mode` has **no effect** on standard models (Ollama, OpenAI, Anthropic, Gemini).
+> Leave it `false` or omit it entirely for those.
+
+---
+
 ## How to Use Distill
 
 ### Step 1 — Upload a transcript
@@ -479,13 +517,15 @@ All settings are in `config.yaml`. Every value can be overridden by an environme
 
 ```yaml
 llm:
-  provider: "lmstudio" # ollama | lmstudio | openai | anthropic | gemini
-  model: "qwen/qwen3-4b-2507" # model identifier
-  temperature: 0.3 # lower = more deterministic JSON output
-  max_tokens: 2048 # 2k is plenty for structured JSON
-  timeout_seconds: 180 # per-request timeout
-  chunk_size_chars: 20000 # ~5k tokens per map-reduce chunk
+  provider: "ollama"       # ollama | lmstudio | openai | anthropic | gemini
+  model: "gemma3:9b"       # must match provider's model identifier exactly
+  temperature: 0.3         # lower = more deterministic JSON output
+  max_tokens: 4000         # raise to 16000 for thinking models (Qwen3, DeepSeek-R1)
+  timeout_seconds: 120     # per-request timeout
+  chunk_size_chars: 20000  # ~5k tokens per map-reduce chunk
   chunk_overlap_chars: 500 # overlap between chunks to preserve context
+  no_think_mode: false  # set true for reasoning models (Qwen3, DeepSeek-R1, QwQ)
+                           # adds /no_think to prompts — no effect on standard models
 ```
 
 ### Speech-to-text settings
@@ -600,6 +640,8 @@ Keepalive comments (`: keepalive`) are sent every second while waiting for LLM r
 
 | Symptom                                        | Cause                                     | Fix                                                                  |
 | ---------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------- |
+| `Failed to parse LLM JSON after 3 attempts`    | Thinking model filling tokens with `<think>` | Set `no_think_mode: true` and `max_tokens: 16000` in `config.yaml` |
+| Empty LLM responses with Qwen3 / DeepSeek      | `reasoning_content` stream field not collected | Already fixed in provider code — ensure you're on latest backend     |
 | `ModuleNotFoundError: structlog`               | Wrong Python / uvicorn being used         | Use `/usr/local/bin/python3 -m uvicorn` explicitly                   |
 | `SSLCertVerificationError` on Whisper download | Python 3.10 (python.org) missing CA certs | Run `"/Applications/Python 3.10/Install Certificates.command"`       |
 | `n_keep >= n_ctx` context error                | Model loaded with default 4096 context    | Reload: `lms load <model> --context-length 32768 -y`                 |

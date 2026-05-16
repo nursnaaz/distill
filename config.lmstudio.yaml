@@ -1,0 +1,11 @@
+llm:
+  provider: "lmstudio"
+  model: "qwen/qwen3-4b-thinking-2507" # must match the model name shown in LM Studio
+  temperature: 0.3
+  max_tokens: 16000
+  timeout_seconds: 120
+  no_think_mode: true
+
+  lmstudio:
+    base_url: "http://localhost:1234/v1"
+    api_key: "lm-studio"
