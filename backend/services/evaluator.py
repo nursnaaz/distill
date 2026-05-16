@@ -158,19 +158,67 @@ class AnswerEvaluator:
         total_weighted = 0.0
         total_weight = 0.0
 
+        # Default values
+        key = ""
+        label = ""
+        score = 1
+        feedback = ""
+        weight = 0.2
+        
+
         for dim in raw_dims:
-            score = max(1, min(5, int(dim.get("score", 3))))  # clamp to [1, 5]
-            weight = float(dim.get("weight", 0.2))
-            dimension_scores.append(
-                DimensionScore(
-                    key=dim.get("key", ""),
-                    label=dim.get("label", ""),
-                    score=score,
-                    weight=weight,
-                )
-            )
-            total_weighted += score * weight
-            total_weight += weight
+
+            # ---------------------------------
+            # Handle dictionary response
+            # ---------------------------------
+            if isinstance(dim, dict):
+
+                key = dim.get("key", "")
+                label = dim.get("label", "")
+                score = dim.get("score", 1)
+                feedback = dim.get("feedback", "")
+                weight = dim.get("weight", 0.2)
+
+            # ---------------------------------
+            # Handle simple integer response
+            # ---------------------------------
+            else:
+
+                key = ""
+                label = ""
+                score = dim
+                feedback = ""
+                weight = 0.2
+
+            # ---------------------------------
+            # Safe score conversion
+            # ---------------------------------
+            try:
+                score = int(score)
+            except:
+                score = 1
+
+            score = max(1, min(5, score))
+
+            # ---------------------------------
+            # Safe weight conversion
+            # ---------------------------------
+            try:
+                weight = float(weight)
+            except:
+                weight = 0.2
+
+        dimension_scores.append(
+        DimensionScore(
+            key=key,
+            label=label,
+            score=score,
+            weight=weight,
+        )
+    )
+
+        total_weighted += score * weight
+        total_weight += weight
 
         # Normalise in case weights don't sum to 1.0
         weighted_score = total_weighted / total_weight if total_weight > 0 else 3.0
