@@ -1,0 +1,12 @@
+git remote add upstream https://github.com/sri67ram/distill.git
+git remote add upstream https://github.com/nursnaaz/distill.git
+git remote add upstream https://github.com/nursnaaz/distill
+git clone https://github.com
+git clone https://github.com/sri67ram/distill.git
+cd distill
+git remote add upstream https://github.com/nursnaaz/distill.git
+git remote -v
+git status
+git checkout main
+git pull upstream main
+doskey /history > my_commands.txt
