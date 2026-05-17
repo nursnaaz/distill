@@ -17,6 +17,13 @@ class GeminiProvider(BaseLLMProvider):
             config.llm.api_key
             or os.environ.get("GOOGLE_API_KEY", "")
         )
+        
+        if not api_key or api_key.strip() == "":
+            raise ValueError(
+                "Google API key is missing. Please set GOOGLE_API_KEY in your .env file. "
+                "Get your key at: https://aistudio.google.com/apikey"
+            )
+        
         genai.configure(api_key=api_key)
         self._model_name = config.llm.model
         self._model = genai.GenerativeModel(self._model_name)

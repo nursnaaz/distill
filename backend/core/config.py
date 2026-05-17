@@ -48,16 +48,16 @@ class LangChainConfig:
 
 @dataclass
 class LLMConfig:
-    provider: str = "ollama"
-    model: str = "gemma3:9b"
+    provider: str = "lmstudio"
+    model: str = "phi-2"
     temperature: float = 0.3
-    max_tokens: int = 4000
+    max_tokens: int = 1500
     timeout_seconds: int = 120
     retry_attempts: int = 3
     retry_delay_seconds: int = 2
-    chunk_size_chars: int = 20000    # each map-reduce chunk fed to the LLM
-    chunk_overlap_chars: int = 500   # overlap between adjacent chunks to avoid losing context at boundaries
-    api_key: str | None = None  # resolved from env vars
+    chunk_size_chars: int = 1500    # each map-reduce chunk fed to the LLM
+    chunk_overlap_chars: int = 250   # overlap between adjacent chunks to avoid losing context at boundaries
+    api_key: str | None = os.getenv("LMSTUDIO_API_KEY") or "lm-studio" 
     ollama: OllamaConfig = field(default_factory=OllamaConfig)
     lmstudio: LMStudioConfig = field(default_factory=LMStudioConfig)
     openai: OpenAIConfig = field(default_factory=OpenAIConfig)
@@ -67,7 +67,7 @@ class LLMConfig:
 
 @dataclass
 class WhisperLocalConfig:
-    model_size: str = "medium"
+    model_size: str = "base"
     device: str = "cpu"
     compute_type: str = "float32"
     download_on_startup: bool = True
