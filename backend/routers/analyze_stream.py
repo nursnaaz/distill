@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 import uuid
+import psutil
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from models.requests import AnalyzeRequest
@@ -67,6 +69,7 @@ async def analyze_stream(body: AnalyzeRequest, request: Request) -> StreamingRes
             await emit({"stage": "error", "message": str(exc)})
 
     task = asyncio.create_task(_run())
+    start_time = time.time()
 
     async def _generate():
         try:
@@ -78,8 +81,24 @@ async def analyze_stream(body: AnalyzeRequest, request: Request) -> StreamingRes
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=1.0)
                 except asyncio.TimeoutError:
-                    # Send a keepalive comment so the connection stays open
-                    yield ": keepalive\n\n"
+                    # Emit live system stats so the frontend can show CPU/RAM
+                    cpu = psutil.cpu_percent(interval=None)
+                    ram = psutil.virtual_memory()
+                    elapsed_s = int(time.time() - start_time)
+                    stats: dict = {
+                        "stage": "stats",
+                        "cpu_percent": round(cpu, 1),
+                        "ram_used_gb": round(ram.used / 1024 ** 3, 1),
+                        "ram_total_gb": round(ram.total / 1024 ** 3, 1),
+                        "elapsed_seconds": elapsed_s,
+                    }
+                    if cpu > 85 and elapsed_s > 120:
+                        stats["recommendation"] = (
+                            f"CPU at {round(cpu)}% for over 2 minutes. "
+                            "Consider switching to a faster model: "
+                            "claude-haiku-3-5 (Anthropic) or gemini-2.0-flash (Google)."
+                        )
+                    yield f"data: {json.dumps(stats)}\n\n"
                     continue
                 yield f"data: {json.dumps(event)}\n\n"
                 if event.get("stage") in ("done", "error"):

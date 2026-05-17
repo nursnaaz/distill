@@ -1,14 +1,14 @@
 import { useCallback } from "react";
 import { useAppState, useAppDispatch } from "../context/AppContext";
 import { analyzeTranscriptStream } from "../api/analyze";
-import type { AnalyzePayload } from "../api/analyze";
+import type { AnalyzePayload, StatsEvent } from "../api/analyze";
 
 export function useSession() {
   const state = useAppState();
   const dispatch = useAppDispatch();
 
   const submitTranscript = useCallback(
-    async (transcript: string, studentName: string, sessionLabel?: string) => {
+    async (transcript: string, studentName: string, sessionLabel?: string, onStats?: (s: StatsEvent) => void) => {
       dispatch({ type: "CLEAR_PROGRESS" });
       dispatch({ type: "SET_ANALYZING", value: true });
       try {
@@ -19,7 +19,7 @@ export function useSession() {
         };
         const result = await analyzeTranscriptStream(payload, (event) => {
           dispatch({ type: "ADD_PROGRESS_STEP", step: event });
-        });
+        }, onStats);
         dispatch({ type: "SET_ANALYZE_RESULT", result });
         dispatch({
           type: "ADD_FLASH",

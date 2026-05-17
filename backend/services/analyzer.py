@@ -108,6 +108,20 @@ async def _call_with_retry(
 
 # ── Structured parsers ─────────────────────────────────────────────────────────
 
+def _make_fallback_summary(prose: str) -> SummaryResponse:
+    """Build a minimal SummaryResponse when the LLM refuses to return valid JSON."""
+    lines = [l.strip() for l in prose.split('\n') if l.strip()]
+    title = lines[0][:80] if lines else "Session Summary"
+    return SummaryResponse(
+        session_title=title,
+        topics_covered=[],
+        key_concepts=[],
+        learning_objectives=[],
+        teacher_insight=prose[:1500],
+        confusion_zones=[],
+    )
+
+
 def _parse_summary(raw: str) -> SummaryResponse:
     data = json.loads(raw)
     return SummaryResponse(
@@ -219,9 +233,15 @@ class TranscriptAnalyzer:
                     "detail": "Building your structured session summary"})
         summary_prompt = self._prompt.render("summary", transcript=distilled)
         summary_msgs = [LLMMessage(role="user", content=summary_prompt)]
-        summary = await _call_with_retry(
-            self._llm, summary_msgs, self._config, _parse_summary, "Summary"
-        )
+        try:
+            summary = await _call_with_retry(
+                self._llm, summary_msgs, self._config, _parse_summary, "Summary"
+            )
+        except EvaluationError:
+            logger.warning("Summary JSON failed after all retries — using prose fallback")
+            await emit({"stage": "summary", "message": "Extracting topics & key concepts",
+                        "detail": "Using prose fallback — consider a more capable model"})
+            summary = _make_fallback_summary(distilled)
         logger.info("Summary complete", topics=summary.topics_covered)
 
         # Final pass 2: Mermaid concept map
@@ -276,8 +296,8 @@ class TranscriptAnalyzer:
         return await self._distill(merged, _depth + 1, emit=emit)
 
     async def _map_chunks(self, chunks: list[str], emit: Emit = _noop) -> list[str]:
-        """Summarize each chunk; run up to 3 concurrently."""
-        sem = asyncio.Semaphore(3)
+        """Summarize each chunk sequentially — local LLM servers handle one request at a time."""
+        sem = asyncio.Semaphore(1)
 
         async def _one(i: int, chunk: str) -> str:
             async with sem:

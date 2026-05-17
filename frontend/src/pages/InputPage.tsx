@@ -158,6 +158,8 @@ export default function InputPage() {
   const [studentName, setStudentName] = useState("Student");
   const [sessionLabel, setSessionLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [cpuStats, setCpuStats] = useState<{ cpu: number; ramUsed: number; ramTotal: number } | null>(null);
+  const [recommendation, setRecommendation] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,14 +206,19 @@ export default function InputPage() {
       return;
     }
     setError(null);
+    setCpuStats(null);
+    setRecommendation(null);
     setAnalysisStartedAt(Date.now());
     dispatch({ type: "SET_STUDENT_NAME", name: studentName });
 
     try {
-      await submitTranscript(transcript, studentName, sessionLabel || undefined);
+      await submitTranscript(transcript, studentName, sessionLabel || undefined, (stats) => {
+        setCpuStats({ cpu: stats.cpu_percent, ramUsed: stats.ram_used_gb, ramTotal: stats.ram_total_gb });
+        if (stats.recommendation) setRecommendation(stats.recommendation);
+      });
       navigate("/summary");
-    } catch {
-      setError("Analysis failed. Check that LM Studio server is running and the model is loaded.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Analysis failed. Check that the backend server is running.");
     }
   };
 
@@ -294,6 +301,32 @@ export default function InputPage() {
       {/* Live progress feed — visible only while analyzing */}
       {isAnalyzing && progressSteps.length > 0 && (
         <AnalysisProgress steps={progressSteps} startedAt={analysisStartedAt} />
+      )}
+
+      {/* System stats + recommendation banner */}
+      {isAnalyzing && cpuStats && (
+        <div style={{
+          background: "#161b22",
+          border: `1px solid ${recommendation ? "#d29922" : "#30363d"}`,
+          borderRadius: 8,
+          padding: "12px 16px",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 12,
+          color: "#8b949e",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>
+              CPU <span style={{ color: cpuStats.cpu > 85 ? "#f85149" : "#3fb950" }}>{cpuStats.cpu}%</span>
+              {"  ·  "}
+              RAM <span style={{ color: "#58a6ff" }}>{cpuStats.ramUsed} / {cpuStats.ramTotal} GB</span>
+            </span>
+          </div>
+          {recommendation && (
+            <div style={{ marginTop: 8, color: "#d29922", lineHeight: 1.5 }}>
+              ⚠ {recommendation}
+            </div>
+          )}
+        </div>
       )}
 
       <Box textAlign="right">

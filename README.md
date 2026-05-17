@@ -1,15 +1,9 @@
 # Distill — Pure knowledge, every class
 
-> An AI-powered classroom assessment tool by Inceptez .  
-00000# Distill — Pure knowledge, every class
-
-# Distill — Pure knowledge, for each and every class
 > An AI-powered classroom assessment tool by Inceptez.  
 > Paste a transcript → get a concept map + adaptive quiz + Dr. Priya's interview debrief.
 
 ---
-#docFixes
- **Sunitha**
 
 ## What It Does
 
@@ -20,10 +14,12 @@ Distill turns any Teams / Zoom / Google Meet transcript into a complete learning
 3. **Generates an adaptive quiz** — 5 MCQ questions (difficulty adjusts per answer) + 3 Teach-It-Back voice questions
 4. **Evaluates every answer** — MCQ explanations + Dr. Priya's AI interview debrief across 5 dimensions
 5. **Exports results** — WhatsApp-ready report with score, verdict, and study recommendations
+6. **Live progress panel** — real-time terminal-style feed showing each pipeline stage (Reading → Splitting → Summarizing chunks → Merging → Concept Map → Questions) with elapsed time per step
+7. **System stats banner** — while analysis runs, the UI shows live CPU% and RAM usage so you know your machine is working (not stuck)
+8. **Model recommendation** — if CPU stays above 85% for more than 2 minutes, the app automatically suggests switching to a faster cloud model
+9. **Resilient JSON parsing** — if a local LLM returns prose instead of structured JSON, Distill extracts what it can rather than failing the whole run
 
-All processing happens locally. No data leaves your machine when using Ollama or LM Studio !!!
-
-Just a testing 
+All processing happens locally when using Ollama or LM Studio. No data leaves your machine.
 
 ---
 
@@ -69,7 +65,7 @@ Just a testing
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │              LLM Server (Ollama :11434 or LM Studio :1234)          │
-│              + Whisper medium model (cached after first download)   │
+│              + Whisper model (cached after first download)          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -108,8 +104,6 @@ distill/
 ├── backend/
 │   ├── main.py                  ← FastAPI app factory, middleware, startup
 │   ├── requirements.txt         ← Python dependencies
-│   ├── data/
-│   │   └── sessions.db          ← SQLite database (auto-created on first run)
 │   │
 │   ├── core/
 │   │   ├── config.py            ← Pydantic settings loader (config.yaml + env vars)
@@ -216,18 +210,116 @@ distill/
 
 ## Prerequisites
 
-| Requirement             | Version | Notes                                     |
-| ----------------------- | ------- | ----------------------------------------- |
-| Python                  | 3.10+   | 3.10 from python.org recommended on macOS |
-| Node.js                 | 20+     | LTS recommended                           |
-| LM Studio **or** Ollama | latest  | For local LLMs (free, no API key)         |
-| Microphone              | —       | For Teach-It-Back voice answers           |
+| Requirement | Version | Notes                           |
+| ----------- | ------- | ------------------------------- |
+| Python      | 3.10+   | 3.11 recommended on Windows     |
+| Node.js     | 20+     | LTS recommended                 |
+| Microphone  | —       | For Teach-It-Back voice answers |
 
-> **Cloud alternative:** If you don't want a local LLM server, you can use OpenAI, Anthropic, or Google Gemini — just set the API key in `.env` and change one line in `config.yaml`.
+> **Local vs Cloud:** You can run LLMs locally with LM Studio or Ollama (free, no API key, slower on CPU-only machines), or use a cloud provider — Anthropic, OpenAI, or Google Gemini. Cloud providers are faster and don't require a local server.
 
 ---
 
-## Setup — LM Studio (Recommended for macOS)
+## Setup — Windows with Anthropic Claude (Verified Working)
+
+This is the setup that was tested and confirmed working on Windows 11 with no GPU (CPU-only). Total analysis time for a ~5,000-character transcript: **~37 seconds**.
+
+### Step 1 — Get an Anthropic API Key
+
+1. Go to [console.anthropic.com](https://console.anthropic.com) and sign in
+2. Buy API credits (minimum $5 — roughly 200 analysis runs at ~$0.02 each)
+3. Go to **API Keys** → create a new key
+4. Copy the key — you'll need it in Step 4
+
+> **Note:** API credits are separate from Claude.ai (Pro subscription). They are one-time credits, not a monthly subscription, and expire after 1 year.
+
+### Step 2 — Clone and install Python dependencies
+
+Open PowerShell in the `distill` folder:
+
+```powershell
+# Activate your virtual environment (if you have one)
+.\venv\Scripts\Activate.ps1
+
+# Install all backend dependencies
+pip install -r backend/requirements.txt
+```
+
+### Step 3 — Install frontend dependencies
+
+```powershell
+cd frontend
+npm install
+cd ..
+```
+
+### Step 4 — Configure your API key
+
+Copy `.env.example` to `.env` and add your key:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...your-key-here...
+```
+
+### Step 5 — Set the LLM provider in config.yaml
+
+Open `config.yaml` and set:
+
+```yaml
+llm:
+  provider: "anthropic"
+  model: "claude-haiku-4-5-20251001"
+  temperature: 0.3
+  max_tokens: 3000
+  timeout_seconds: 120
+  chunk_size_chars: 8000
+  chunk_overlap_chars: 500
+```
+
+Also set Whisper to not download on startup (avoids a long wait on first launch):
+
+```yaml
+speech_to_text:
+  whisper_local:
+    model_size: "base"
+    download_on_startup: false
+```
+
+### Step 6 — Start the backend
+
+Open a PowerShell terminal in the `distill` folder:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+cd backend
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+You should see:
+
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO:     LLM provider: anthropic (claude-haiku-4-5-20251001)
+```
+
+### Step 7 — Start the frontend
+
+Open a second PowerShell terminal:
+
+```powershell
+cd frontend
+npm run dev
+```
+
+### Step 8 — Open the app
+
+Visit **http://localhost:5173**
+
+> **Important:** After any change to `config.yaml`, you must manually restart the backend (Ctrl+C and re-run). The `--reload` flag only watches `.py` files, not YAML.
+
+---
+
+## Setup — LM Studio (Local, macOS Recommended)
 
 LM Studio gives you a GUI to download and manage models, and runs the same OpenAI-compatible API.
 
@@ -247,7 +339,6 @@ Or use the CLI after installing LM Studio:
 lms server start
 lms get qwen/qwen3-4b-2507    # downloads GGUF Q8_0
 ```
-note: "qwen/" is a path and not a model name
 
 ### Step 3 — Load the model with a large context window
 
@@ -255,7 +346,7 @@ note: "qwen/" is a path and not a model name
 lms load qwen/qwen3-4b-2507 --context-length 32768 -y
 ```
 
-> **Why 32768?** The default context (4096) is too small for Distill's system prompts (~6000 tokens). 32k fits all prompts comfortably. Qwen3-4B supports up to 262k.
+> **Why 32768?** The default context (4096) is too small for Distill's system prompts (~6000 tokens). 32k fits all prompts comfortably.
 
 ### Step 4 — Clone the repo and configure
 
@@ -265,46 +356,12 @@ cp .env.example .env
 # No edits needed — LM Studio is the default in config.yaml
 ```
 
-### Step 5 — Install Python dependencies
+### Step 5 — Install dependencies and run
 
 ```bash
-# macOS: use the python.org Python 3.10 (not Homebrew)
-/usr/local/bin/pip3 install -r backend/requirements.txt
+make install
+make dev   # starts backend + frontend together
 ```
-
-### Step 6 — Fix SSL certificates (macOS Python 3.10 only, one-time)
-
-```bash
-"/Applications/Python 3.10/Install Certificates.command"
-```
-
-> This is required so Whisper can download its model on first use. Without it you get `SSLCertVerificationError`.
-
-### Step 7 — Install frontend dependencies
-
-```bash
-cd frontend && npm install
-```
-
-### Step 8 — Run (two terminals)
-
-**Terminal 1 — Backend:**
-
-```bash
-cd distill/backend
-/usr/local/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-**Terminal 2 — Frontend:**
-
-```bash
-cd distill/frontend
-npm run dev
-```
-
-### Step 9 — Open the app
-
-Visit **http://localhost:5173**
 
 ---
 
@@ -337,15 +394,12 @@ llm:
 ```bash
 cp .env.example .env
 make install
-make dev   # starts backend + frontend together
+make dev
 ```
 
 ---
 
-## Setup — Cloud LLM (OpenAI / Anthropic / Gemini)
-
-
-No local server needed. Just set the API key and update `config.yaml`
+## Setup — Other Cloud Providers (OpenAI / Gemini)
 
 ### OpenAI
 
@@ -359,18 +413,6 @@ llm:
 ```bash
 # .env
 OPENAI_API_KEY=sk-...
-```
-
-### Anthropic Claude
-
-```yaml
-llm:
-  provider: "anthropic"
-  model: "claude-3-5-haiku-20241022"
-```
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ### Google Gemini
@@ -401,65 +443,56 @@ Open http://localhost:5173.
   - `.docx` — Word document
 - Click **Analyze Transcript**
 
-A live progress panel shows every step:
+A live progress panel shows every step with elapsed time:
 
 ```
-✓ 📄 Reading (175,827 chars loaded)
-✓ ✂️  Splitting into 10 chunks
-✓ 🔍 Summarizing chunk 1 of 10
+✓ 📄 Reading (175,827 chars loaded)             0s
+✓ ✂️  Splitting into 10 chunks                  1s
+✓ 🔍 Summarizing chunk 1 of 10                 8s
   ...
-✓ 🔗 Merging 10 chunk summaries
-✓ 📝 Topics & Concepts
-✓ 🗺️  Concept Map (19 nodes)
-✓ 🎯 Quiz Questions (5 MCQ + 3 Teach-It-Back)
-✓ 💾 Saving session
+✓ 🔗 Merging 10 chunk summaries               32s
+✓ 📝 Topics & Concepts                        35s
+✓ 🗺️  Concept Map (19 nodes)                  36s
+✓ 🎯 Quiz Questions (5 MCQ + 3 Teach-It-Back) 37s
+✓ 💾 Saving session                           37s
 ```
+
+A system stats bar also appears below the progress panel showing live CPU% and RAM used / total. If your CPU stays above 85% for more than 2 minutes, the app surfaces a recommendation to switch to a faster model (e.g. Anthropic Claude Haiku or Google Gemini Flash).
 
 ### Step 2 — Review the summary
 
 The Summary page shows:
 
-- **Session title** and **8 key topics**
-- **Mermaid concept map** — click any node to explore
+- **Session title** and key topics
+- **Mermaid concept map** — shows how every concept connects
 - **Confusion zones** — areas the model flagged as complex
 
 Click **Start Assessment** to continue.
 
 ### Step 3 — Complete the assessment
 
-**MCQ Questions (5 questions):**
+**MCQ Questions:**
 
 - Select an answer from A / B / C / D
 - Use "Need a hint?" (3 hint levels) if stuck
 - Click **Submit Answer** — feedback appears immediately
-- Click **Next Question**
 
 Difficulty adapts: 2 correct in a row → harder; 1 wrong → easier.
 
-**Teach-It-Back Questions (3 questions):**
+**Teach-It-Back Questions:**
 
-- Read the question
-- Click **Start Recording** and explain the concept in your own words (up to 2 minutes)
+- Click **Start Recording** and explain the concept in your own words
 - Click **Stop Recording** — Whisper transcribes your answer
-- Or use the **Type your answer** text fallback if microphone is unavailable
+- Or use **Type your answer** if microphone is unavailable
 - Click **Submit** — Dr. Priya scores your answer across 5 dimensions
 
 ### Step 4 — View results
 
-The Results page shows:
-
-- **MCQ score** (e.g. 5/5 = 100%)
-- **Per-question breakdown** with correct answers and explanations
-- **Dr. Priya's debrief** for each voice answer:
-  - Technical Accuracy (30%)
-  - Conceptual Depth (25%)
-  - Clarity of Explanation (20%)
-  - Use of Examples (15%)
-  - Concept Connections (10%)
+- **MCQ score** with per-question breakdown and explanations
+- **Dr. Priya's debrief** — Technical Accuracy, Conceptual Depth, Clarity, Use of Examples, Concept Connections
 - **Overall verdict**: Strong / Good / Developing / Foundational
-- **Study recommendations** — 3 specific things to review
-
-Click **Share on WhatsApp** to send your report.
+- **Study recommendations** — specific topics to review
+- **Share on WhatsApp** to send your report
 
 ---
 
@@ -471,63 +504,58 @@ All settings are in `config.yaml`. Every value can be overridden by an environme
 
 ```yaml
 llm:
-  provider: "lmstudio" # ollama | lmstudio | openai | anthropic | gemini
-  model: "qwen/qwen3-4b-2507" # model identifier
-  temperature: 0.3 # lower = more deterministic JSON output
-  max_tokens: 2048 # 2k is plenty for structured JSON
-  timeout_seconds: 180 # per-request timeout
-  chunk_size_chars: 20000 # ~5k tokens per map-reduce chunk
-  chunk_overlap_chars: 500 # overlap between chunks to preserve context
+  provider: "anthropic"       # ollama | lmstudio | openai | anthropic | gemini
+  model: "claude-haiku-4-5-20251001"  # model identifier
+  temperature: 0.3            # lower = more deterministic JSON output
+  max_tokens: 3000            # hard cap per LLM call; 3k covers all structured outputs
+  timeout_seconds: 120        # per-request timeout
+  chunk_size_chars: 8000      # ~2k tokens per map-reduce chunk
+  chunk_overlap_chars: 500    # overlap between chunks to preserve context
 ```
 
 ### Speech-to-text settings
 
 ```yaml
 speech_to_text:
-  provider: "whisper_local" # whisper_local | openai_whisper
-  language: "en" # transcription language
+  provider: "whisper_local"   # whisper_local | openai_whisper
+  language: "en"
 
   whisper_local:
-    model_size: "medium" # tiny | base | small | medium | large
-    device: "cpu" # cpu | cuda | mps
-    download_on_startup: false # true = download model when server starts
+    model_size: "base"        # tiny | base | small | medium | large
+    device: "cpu"             # cpu | cuda | mps
+    download_on_startup: false  # set true to pre-download at server start
 ```
 
 > **Model size guide:**
 >
 > - `tiny` — 75 MB, very fast, lower accuracy
-> - `base` — 145 MB, fast, decent accuracy
+> - `base` — 145 MB, fast, decent accuracy (recommended for CPU)
 > - `small` — 465 MB, good balance
-> - `medium` — 1.5 GB, high accuracy (default)
+> - `medium` — 1.5 GB, high accuracy
 > - `large` — 3 GB, best accuracy, slow on CPU
 
 ### Session storage
 
 ```yaml
 session:
-  storage: "sqlite" # memory | sqlite
+  storage: "sqlite"           # memory | sqlite
   sqlite_path: "./data/sessions.db"
-  max_sessions_in_memory: 100 # only used when storage = memory
 ```
 
-> Use `sqlite` to persist sessions across backend restarts. Use `memory` for demos.
+> Use `sqlite` to persist sessions across backend restarts.
 
 ### Assessment tuning
 
 ```yaml
 assessment:
   mcq:
-    count: 5 # number of MCQ questions
+    count: 5
     difficulty_distribution:
       easy: 0.30
       medium: 0.50
       hard: 0.20
     show_hints: true
     hint_levels: 3
-
-  teach_it_back:
-    count: 3 # number of voice questions
-    max_recording_seconds: 120
 ```
 
 ---
@@ -574,34 +602,54 @@ Events arrive as `data: {...}\n\n`:
 
 ```json
 { "stage": "reading",    "message": "Reading transcript",         "detail": "175,827 characters" }
-{ "stage": "splitting",  "message": "Splitting into 10 chunks",   "detail": "chunk_size=20000" }
+{ "stage": "splitting",  "message": "Splitting into 10 chunks",   "detail": "chunk_size=8000" }
 { "stage": "chunk",      "message": "Summarizing chunk 3 of 10",  "detail": "..." }
-{ "stage": "merging",    "message": "Merging 10 chunk summaries", "detail": "..." }
+{ "stage": "merging",    "message": "Merging chunk summaries",    "detail": "..." }
 { "stage": "summary",    "message": "Extracting topics & concepts" }
 { "stage": "concept_map","message": "Drawing concept map" }
-{ "stage": "questions",  "message": "Generating 8 quiz questions" }
+{ "stage": "questions",  "message": "Generating quiz questions" }
 { "stage": "saving",     "message": "Saving session" }
+{ "stage": "stats",      "cpu_percent": 42.1, "ram_used_gb": 9.2, "ram_total_gb": 16.0, "elapsed_seconds": 45 }
 { "stage": "done",       "result": { ...full AnalyzeResult... } }
 ```
-
-Keepalive comments (`: keepalive`) are sent every second while waiting for LLM responses.
 
 ---
 
 ## Troubleshooting
 
-| Symptom                                        | Cause                                     | Fix                                                                  |
-| ---------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------- |
-| `ModuleNotFoundError: structlog`               | Wrong Python / uvicorn being used         | Use `/usr/local/bin/python3 -m uvicorn` explicitly                   |
-| `SSLCertVerificationError` on Whisper download | Python 3.10 (python.org) missing CA certs | Run `"/Applications/Python 3.10/Install Certificates.command"`       |
-| `n_keep >= n_ctx` context error                | Model loaded with default 4096 context    | Reload: `lms load <model> --context-length 32768 -y`                 |
-| Timeout after 120 seconds                      | LM Studio/Ollama idle connection timeout  | Already fixed — streaming mode is always used for local providers    |
-| "Session not found" after restart              | Using `storage: memory`                   | Switch to `storage: sqlite` in `config.yaml`                         |
-| MCQ shows correct answer pre-filled            | React reusing component state             | Already fixed — `key={question.id}` forces fresh mount               |
-| CORS error in browser                          | Frontend URL not in allowed origins       | Add `http://localhost:5173` to `config.yaml → server → cors_origins` |
-| Whisper slow on first use                      | Model downloading (~1.5 GB for medium)    | One-time download — cached forever after; use `tiny` for demos       |
-| LM Studio picks MLX over GGUF                  | MLX variant present                       | Delete `~/.lmstudio/models/<model-name>-MLX-*/` so only GGUF remains |
-| Frontend blank / 404                           | Backend not running                       | Start backend first; check port 8000                                 |
+| Symptom | Cause | Fix |
+| ------- | ----- | --- |
+| `ModuleNotFoundError: structlog` | Wrong Python / uvicorn being used | Activate your venv first: `.\venv\Scripts\Activate.ps1` |
+| `SSLCertVerificationError` on Whisper download | Python 3.10 (macOS python.org) missing CA certs | Run `"/Applications/Python 3.10/Install Certificates.command"` |
+| `n_keep >= n_ctx` context error | Model loaded with default 4096 context | Reload: `lms load <model> --context-length 32768 -y` |
+| Analysis stops at chunk 3 | LM Studio rejecting concurrent requests | Fixed in code: `Semaphore(1)` ensures sequential requests |
+| Model loops to max_tokens without stopping | 3-bit quantized model (IQ3_M) can't emit stop tokens | Use Q4_K_M or higher quantization, or switch to a cloud provider |
+| Config change has no effect | uvicorn `--reload` only watches `.py` files | Manually restart uvicorn after editing `config.yaml` |
+| `404` on model name | Model ID spelled incorrectly | Correct Haiku ID is `claude-haiku-4-5-20251001` |
+| `Your credit balance is too low` | Anthropic API credits exhausted | Top up at console.anthropic.com → Billing |
+| Timeout after 120 seconds | LM Studio/Ollama idle connection timeout | Already fixed — streaming mode is always used for local providers |
+| "Session not found" after restart | Using `storage: memory` | Switch to `storage: sqlite` in `config.yaml` |
+| CORS error in browser | Frontend URL not in allowed origins | Add `http://localhost:5173` to `config.yaml → server → cors_origins` |
+| Whisper slow on first use | Model downloading for the first time | One-time download; `download_on_startup: false` defers it to first voice use |
+| LM Studio picks MLX over GGUF | MLX variant present in models folder | Delete `~/.lmstudio/models/<model>-MLX-*/` so only GGUF remains |
+| Frontend blank / 404 | Backend not running | Start backend first; check port 8000 |
+| Two model instances loaded in LM Studio | Accidentally loaded model twice | Open Developer tab → eject the duplicate `:2` instance |
+
+---
+
+## Supported Transcript Formats
+
+Distill accepts any text input with instructor speech. No specific format required.
+
+| Source          | How to export                                    |
+| --------------- | ------------------------------------------------ |
+| Microsoft Teams | Meeting recap → Download transcript (`.vtt`)     |
+| Zoom            | Cloud recordings → Transcript (`.vtt`)           |
+| Google Meet     | Meeting notes → Transcript (`.txt`)              |
+| Manual          | Paste directly into the text area                |
+| Word doc        | Upload `.docx` — text is extracted automatically |
+
+Minimum 100 characters. There is no maximum — the map-reduce pipeline handles transcripts of any length.
 
 ---
 
@@ -620,51 +668,15 @@ pytest tests/ --cov=. --cov-report=term-missing
 
 ---
 
-## Supported Transcript Formats
+## Contributing
 
-Distill accepts any text input with instructor speech. No specific format required.
+Branch naming:
+- Feature: `feature/<what-you-are-adding>`
+- Bug fix: `bugfix/fix-<description>`
+- Documentation: `docs/<description>`
 
-| Source          | How to export                                    |
-| --------------- | ------------------------------------------------ |
-| Microsoft Teams | Meeting recap → Download transcript (`.vtt`)     |
-| Zoom            | Cloud recordings → Transcript (`.vtt`)           |
-| Google Meet     | Meeting notes → Transcript (`.txt`)              |
-| Manual          | Paste directly into the text area                |
-| Word doc        | Upload `.docx` — text is extracted automatically |
-
-Minimum 100 characters. There is no maximum, the map-reduce pipeline handles transcripts of any length.
-Test commit
-
-This also serves as a guide for PR - Pull requests: 
-This also testing by Shobana
-
-This also serves as a guid for PR - Pull requests: 
-- Feature update : feature/<somefeatureYouadd>
-- bugfix : bugfix/fix-login-button
-- document Update: docs/update-readme
 ---
 
-
-## Licensex
-
-MIT — for educational use as part of the GenAI-2026 curriculum by Inceptez
-
-
-Trying to add some doc
-#Testing line - Sabari
-#Testing - Karthik
-#Testing - Nat
-
-#Testing - Nat
-# 
-- readme changes
-- added new features
-
-#Testing - Nat
-#adding testing line 
-#Testing - Nat- readme changes
-
-#Testing - Naushin. 
+## License
 
 MIT — for educational use as part of the GenAI-2026 curriculum by Inceptez.
-...

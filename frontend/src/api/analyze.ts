@@ -15,6 +15,15 @@ export interface ProgressEvent {
   total_chunks?: number;
 }
 
+export interface StatsEvent {
+  stage: "stats";
+  cpu_percent: number;
+  ram_used_gb: number;
+  ram_total_gb: number;
+  elapsed_seconds: number;
+  recommendation?: string;
+}
+
 export async function analyzeTranscript(payload: AnalyzePayload): Promise<AnalyzeResult> {
   const { data } = await apiClient.post<AnalyzeResult>("/api/analyze", payload);
   return data;
@@ -27,6 +36,7 @@ export async function analyzeTranscript(payload: AnalyzePayload): Promise<Analyz
 export async function analyzeTranscriptStream(
   payload: AnalyzePayload,
   onProgress: (event: ProgressEvent) => void,
+  onStats?: (stats: StatsEvent) => void,
 ): Promise<AnalyzeResult> {
   const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "http://localhost:8000";
   const response = await fetch(`${baseUrl}/api/analyze/stream`, {
@@ -57,6 +67,7 @@ export async function analyzeTranscriptStream(
         const event = JSON.parse(line.slice(6)) as ProgressEvent & { result?: AnalyzeResult };
         if (event.stage === "done" && event.result) return event.result;
         if (event.stage === "error") throw new Error(event.message);
+        if (event.stage === "stats") { onStats?.(event as unknown as StatsEvent); continue; }
         onProgress(event);
       }
     }
