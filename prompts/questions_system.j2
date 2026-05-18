@@ -16,6 +16,10 @@ MCQ difficulty target: {{ difficulty_distribution.easy*100|int }}% easy, {{ diff
 Session transcript summary:
 {{ session_summary }}
 
+For bloom_level, return EXACTLY ONE value from:
+"remember", "understand", "apply", "analyze", or "evaluate".
+Do not combine values with |.
+    
 Return this exact JSON:
 {
   "questions": [
@@ -40,7 +44,7 @@ Return this exact JSON:
       "type": "teach_it_back",
       "topic": "exact topic from session",
       "difficulty": "medium",
-      "bloom_level": "understand|apply|analyze",
+      "bloom_level": "understand",
       "question": "Explain [concept] as if teaching it to someone seeing it for the first time...",
       "evaluation_rubric": "A strong answer should include: (1) core definition, (2) how it works mechanically, (3) a concrete example or analogy, (4) why it matters"
     }

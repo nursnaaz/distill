@@ -79,7 +79,7 @@ git pull upstream main
 git checkout -b your-branch-name
 ```
 
-Good branch names:
+Good branch names references:
 
 | What you're doing | Branch name |
 |---|---|

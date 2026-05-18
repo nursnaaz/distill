@@ -1,22 +1,27 @@
+# Version V1.0
 # Distill — Pure knowledge, every class
+
+
 
 > An AI-powered classroom assessment tool by Inceptez .  
 00000# Distill — Pure knowledge, every class
 
 # Distill — Pure knowledge, for each and every class
 > An AI-powered classroom assessment tool by Inceptez.  
+> Built with FastAPI, React, Ollama, LM Studio, and Whisper.
 > Paste a transcript → get a concept map + adaptive quiz + Dr. Priya's interview debrief.
-
+Added new line by Dam
+Added another line of change
 ---
 #docFixes--
+#docFixes
+ **Sunitha**
 
---AS version
-
-## What It Does
+## What It Does below
 
 --New Line Added--
 
-Distill turns any Teams / Zoom / Google Meet transcript into a complete learning assessment in minutes:
+Distill turns any Teams / Zoom / Google Meet or other transcripts into a complete learning assessment in minutes:
 
 1. **Analyzes the transcript** — map-reduce summarization extracts topics, key concepts, and a structured summary
 2. **Draws a concept map** — Mermaid diagram showing how every concept connects
@@ -28,10 +33,10 @@ All processing happens locally. No data leaves your machine when using Ollama or
 
 Just a testing 
 
----
+-------
 
 ## Architecture
-
+### Changes made by Bineetha
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          Browser (localhost:5173)                   │
@@ -78,14 +83,14 @@ Just a testing
 
 ### Key Design Decisions
 
-| Decision | Why |
-|---|---|
-| SSE over WebSocket | One-way server→client stream; simpler, no handshake overhead |
-| `fetch()` not `EventSource` | `EventSource` doesn't support POST bodies; SSE over POST requires fetch |
+| Decision                     | Why                                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------ |
+| SSE over WebSocket           | One-way server→client stream; simpler, no handshake overhead                         |
+| `fetch()` not `EventSource`  | `EventSource` doesn't support POST bodies; SSE over POST requires fetch              |
 | `stream=True` for local LLMs | LM Studio / Ollama kill idle connections at ~120 s; streaming keeps the socket alive |
-| map-reduce distillation | Transcripts can be 100k+ chars; this fits any context window by chunking |
-| SQLite WAL mode | Allows concurrent reads during writes — safe for multi-user local use |
-| `key={question.id}` on MCQ | Forces React to unmount/remount per question — prevents stale state carrying over |
+| map-reduce distillation      | Transcripts can be 100k+ chars; this fits any context window by chunking             |
+| SQLite WAL mode              | Allows concurrent reads during writes — safe for multi-user local use                |
+| `key={question.id}` on MCQ   | Forces React to unmount/remount per question — prevents stale state carrying over    |
 
 ---
 
@@ -219,12 +224,12 @@ distill/
 
 ## Prerequisites
 
-| Requirement | Version | Notes |
-|---|---|---|
-| Python | 3.10+ | 3.10 from python.org recommended on macOS |
-| Node.js | 20+ | LTS recommended |
-| LM Studio **or** Ollama | latest | For local LLMs (free, no API key) |
-| Microphone | — | For Teach-It-Back voice answers |
+| Requirement             | Version | Notes                                     |
+| ----------------------- | ------- | ----------------------------------------- |
+| Python                  | 3.10+   | 3.10 from python.org recommended on macOS |
+| Node.js                 | 20+     | LTS recommended                           |
+| LM Studio **or** Ollama | latest  | For local LLMs (free, no API key)         |
+| Microphone              | —       | For Teach-It-Back voice answers           |
 
 > **Cloud alternative:** If you don't want a local LLM server, you can use OpenAI, Anthropic, or Google Gemini — just set the API key in `.env` and change one line in `config.yaml`.
 
@@ -292,12 +297,14 @@ cd frontend && npm install
 ### Step 8 — Run (two terminals)
 
 **Terminal 1 — Backend:**
+
 ```bash
 cd distill/backend
 /usr/local/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **Terminal 2 — Frontend:**
+
 ```bash
 cd distill/frontend
 npm run dev
@@ -356,6 +363,7 @@ llm:
   provider: "openai"
   model: "gpt-4o-mini"
 ```
+
 ```bash
 # .env
 OPENAI_API_KEY=sk-...
@@ -368,6 +376,7 @@ llm:
   provider: "anthropic"
   model: "claude-3-5-haiku-20241022"
 ```
+
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
 ```
@@ -379,6 +388,7 @@ llm:
   provider: "gemini"
   model: "gemini-2.0-flash"
 ```
+
 ```bash
 GOOGLE_API_KEY=AIza...
 ```
@@ -416,6 +426,7 @@ A live progress panel shows every step:
 ### Step 2 — Review the summary
 
 The Summary page shows:
+
 - **Session title** and **8 key topics**
 - **Mermaid concept map** — click any node to explore
 - **Confusion zones** — areas the model flagged as complex
@@ -425,6 +436,7 @@ Click **Start Assessment** to continue.
 ### Step 3 — Complete the assessment
 
 **MCQ Questions (5 questions):**
+
 - Select an answer from A / B / C / D
 - Use "Need a hint?" (3 hint levels) if stuck
 - Click **Submit Answer** — feedback appears immediately
@@ -433,6 +445,7 @@ Click **Start Assessment** to continue.
 Difficulty adapts: 2 correct in a row → harder; 1 wrong → easier.
 
 **Teach-It-Back Questions (3 questions):**
+
 - Read the question
 - Click **Start Recording** and explain the concept in your own words (up to 2 minutes)
 - Click **Stop Recording** — Whisper transcribes your answer
@@ -442,6 +455,7 @@ Difficulty adapts: 2 correct in a row → harder; 1 wrong → easier.
 ### Step 4 — View results
 
 The Results page shows:
+
 - **MCQ score** (e.g. 5/5 = 100%)
 - **Per-question breakdown** with correct answers and explanations
 - **Dr. Priya's debrief** for each voice answer:
@@ -465,29 +479,30 @@ All settings are in `config.yaml`. Every value can be overridden by an environme
 
 ```yaml
 llm:
-  provider: "lmstudio"            # ollama | lmstudio | openai | anthropic | gemini
-  model: "qwen/qwen3-4b-2507"    # model identifier
-  temperature: 0.3                # lower = more deterministic JSON output
-  max_tokens: 2048                # 2k is plenty for structured JSON
-  timeout_seconds: 180            # per-request timeout
-  chunk_size_chars: 20000         # ~5k tokens per map-reduce chunk
-  chunk_overlap_chars: 500        # overlap between chunks to preserve context
+  provider: "lmstudio" # ollama | lmstudio | openai | anthropic | gemini
+  model: "qwen/qwen3-4b-2507" # model identifier
+  temperature: 0.3 # lower = more deterministic JSON output
+  max_tokens: 2048 # 2k is plenty for structured JSON
+  timeout_seconds: 180 # per-request timeout
+  chunk_size_chars: 20000 # ~5k tokens per map-reduce chunk
+  chunk_overlap_chars: 500 # overlap between chunks to preserve context
 ```
 
 ### Speech-to-text settings
 
 ```yaml
 speech_to_text:
-  provider: "whisper_local"       # whisper_local | openai_whisper
-  language: "en"                  # transcription language
+  provider: "whisper_local" # whisper_local | openai_whisper
+  language: "en" # transcription language
 
   whisper_local:
-    model_size: "medium"          # tiny | base | small | medium | large
-    device: "cpu"                 # cpu | cuda | mps
-    download_on_startup: false    # true = download model when server starts
+    model_size: "medium" # tiny | base | small | medium | large
+    device: "cpu" # cpu | cuda | mps
+    download_on_startup: false # true = download model when server starts
 ```
 
 > **Model size guide:**
+>
 > - `tiny` — 75 MB, very fast, lower accuracy
 > - `base` — 145 MB, fast, decent accuracy
 > - `small` — 465 MB, good balance
@@ -498,9 +513,9 @@ speech_to_text:
 
 ```yaml
 session:
-  storage: "sqlite"               # memory | sqlite
+  storage: "sqlite" # memory | sqlite
   sqlite_path: "./data/sessions.db"
-  max_sessions_in_memory: 100     # only used when storage = memory
+  max_sessions_in_memory: 100 # only used when storage = memory
 ```
 
 > Use `sqlite` to persist sessions across backend restarts. Use `memory` for demos.
@@ -510,7 +525,7 @@ session:
 ```yaml
 assessment:
   mcq:
-    count: 5                      # number of MCQ questions
+    count: 5 # number of MCQ questions
     difficulty_distribution:
       easy: 0.30
       medium: 0.50
@@ -519,7 +534,7 @@ assessment:
     hint_levels: 3
 
   teach_it_back:
-    count: 3                      # number of voice questions
+    count: 3 # number of voice questions
     max_recording_seconds: 120
 ```
 
@@ -543,16 +558,16 @@ make clean            # remove __pycache__, .pyc files
 
 Once running, visit **http://localhost:8000/docs** for interactive Swagger UI.
 
-| Method | Endpoint | Description |
-|---|---|---|
+| Method | Endpoint              | Description                                                       |
+| ------ | --------------------- | ----------------------------------------------------------------- |
 | `POST` | `/api/analyze/stream` | Analyze transcript — SSE stream of progress events + final result |
-| `POST` | `/api/evaluate/mcq` | Evaluate an MCQ answer |
-| `POST` | `/api/evaluate/voice` | Evaluate a Teach-It-Back voice/text answer |
-| `POST` | `/api/transcribe` | Transcribe audio (WebM/MP4/WAV) to text |
-| `GET` | `/api/sessions` | List all sessions |
-| `GET` | `/api/sessions/{id}` | Get session detail |
-| `GET` | `/api/config/ui` | UI feature flags |
-| `GET` | `/api/providers` | Active LLM + STT provider info |
+| `POST` | `/api/evaluate/mcq`   | Evaluate an MCQ answer                                            |
+| `POST` | `/api/evaluate/voice` | Evaluate a Teach-It-Back voice/text answer                        |
+| `POST` | `/api/transcribe`     | Transcribe audio (WebM/MP4/WAV) to text                           |
+| `GET`  | `/api/sessions`       | List all sessions                                                 |
+| `GET`  | `/api/sessions/{id}`  | Get session detail                                                |
+| `GET`  | `/api/config/ui`      | UI feature flags                                                  |
+| `GET`  | `/api/providers`      | Active LLM + STT provider info                                    |
 
 ### SSE event format
 
@@ -583,18 +598,18 @@ Keepalive comments (`: keepalive`) are sent every second while waiting for LLM r
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `ModuleNotFoundError: structlog` | Wrong Python / uvicorn being used | Use `/usr/local/bin/python3 -m uvicorn` explicitly |
-| `SSLCertVerificationError` on Whisper download | Python 3.10 (python.org) missing CA certs | Run `"/Applications/Python 3.10/Install Certificates.command"` |
-| `n_keep >= n_ctx` context error | Model loaded with default 4096 context | Reload: `lms load <model> --context-length 32768 -y` |
-| Timeout after 120 seconds | LM Studio/Ollama idle connection timeout | Already fixed — streaming mode is always used for local providers |
-| "Session not found" after restart | Using `storage: memory` | Switch to `storage: sqlite` in `config.yaml` |
-| MCQ shows correct answer pre-filled | React reusing component state | Already fixed — `key={question.id}` forces fresh mount |
-| CORS error in browser | Frontend URL not in allowed origins | Add `http://localhost:5173` to `config.yaml → server → cors_origins` |
-| Whisper slow on first use | Model downloading (~1.5 GB for medium) | One-time download — cached forever after; use `tiny` for demos |
-| LM Studio picks MLX over GGUF | MLX variant present | Delete `~/.lmstudio/models/<model-name>-MLX-*/` so only GGUF remains |
-| Frontend blank / 404 | Backend not running | Start backend first; check port 8000 |
+| Symptom                                        | Cause                                     | Fix                                                                  |
+| ---------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------- |
+| `ModuleNotFoundError: structlog`               | Wrong Python / uvicorn being used         | Use `/usr/local/bin/python3 -m uvicorn` explicitly                   |
+| `SSLCertVerificationError` on Whisper download | Python 3.10 (python.org) missing CA certs | Run `"/Applications/Python 3.10/Install Certificates.command"`       |
+| `n_keep >= n_ctx` context error                | Model loaded with default 4096 context    | Reload: `lms load <model> --context-length 32768 -y`                 |
+| Timeout after 120 seconds                      | LM Studio/Ollama idle connection timeout  | Already fixed — streaming mode is always used for local providers    |
+| "Session not found" after restart              | Using `storage: memory`                   | Switch to `storage: sqlite` in `config.yaml`                         |
+| MCQ shows correct answer pre-filled            | React reusing component state             | Already fixed — `key={question.id}` forces fresh mount               |
+| CORS error in browser                          | Frontend URL not in allowed origins       | Add `http://localhost:5173` to `config.yaml → server → cors_origins` |
+| Whisper slow on first use                      | Model downloading (~1.5 GB for medium)    | One-time download — cached forever after; use `tiny` for demos       |
+| LM Studio picks MLX over GGUF                  | MLX variant present                       | Delete `~/.lmstudio/models/<model-name>-MLX-*/` so only GGUF remains |
+| Frontend blank / 404                           | Backend not running                       | Start backend first; check port 8000                                 |
 
 ---
 
@@ -617,38 +632,71 @@ pytest tests/ --cov=. --cov-report=term-missing
 
 Distill accepts any text input with instructor speech. No specific format required.
 
-| Source | How to export |
-|---|---|
-| Microsoft Teams | Meeting recap → Download transcript (`.vtt`) |
-| Zoom | Cloud recordings → Transcript (`.vtt`) |
-| Google Meet | Meeting notes → Transcript (`.txt`) |
-| Manual | Paste directly into the text area |
-| Word doc | Upload `.docx` — text is extracted automatically |
+| Source          | How to export                                    |
+| --------------- | ------------------------------------------------ |
+| Microsoft Teams | Meeting recap → Download transcript (`.vtt`)     |
+| Zoom            | Cloud recordings → Transcript (`.vtt`)           |
+| Google Meet     | Meeting notes → Transcript (`.txt`)              |
+| Manual          | Paste directly into the text area                |
+| Word doc        | Upload `.docx` — text is extracted automatically |
 
 Minimum 100 characters. There is no maximum, the map-reduce pipeline handles transcripts of any length.
+Test commit
 
+This also serves as a guide for PR - Pull requests: 
 This also testing by Shobana
 
-=======
 This also serves as a guid for PR - Pull requests: 
 - Feature update : feature/<somefeatureYouadd>
 - bugfix : bugfix/fix-login-button
 - document Update: docs/update-readme
 ---
-This is a testing line
-## License
-=======
+
+## Who Is This For?
+
+- AI Architects designing LLM-powered systems
+- Backend Engineers building streaming AI APIs
+- Frontend Engineers integrating SSE-based UX
+- Educators building AI-assisted learning tools
+- Product Managers exploring AI-native UX patterns
+
+## Licensex
 
 MIT — for educational use as part of the GenAI-2026 curriculum by Inceptez
 
 
 Trying to add some doc
 #Testing line - Sabari
+#Testing - Karthik
+#adding a new line
+#Testing - Nat
 
+#Testing - Nat
+# 
 - readme changes
 - added new features
 
+ # Testing GIT Changes
 #Testing - Nat
+#adding testing line 
+#Testing - Nat- readme changes
+#Testing -Bhagya
 
 #Testing - Naushin. 
+# testing - new N
+
+MIT — for educational use as part of the GenAI-2026 curriculum by Inceptez.
+
+Thanks Thanks
+# Testing by kannabiran
+## changes to readme to get contributor access for Gopal KV... from inceptez class  
+check readme
+
+## Test Comment from Raj
+...
+
+
+Shabbir changes
+=======
+## New
 

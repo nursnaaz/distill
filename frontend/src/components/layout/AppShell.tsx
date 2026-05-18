@@ -73,7 +73,7 @@ export default function AppShell() {
       <TopNavigation
         identity={{
           href: "/",
-          title: brandName,
+          title: `✨💡 ${brandName}`,
           logo: undefined,
         }}
         utilities={[
