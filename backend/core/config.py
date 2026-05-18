@@ -30,6 +30,7 @@ class LMStudioConfig:
 class OpenAIConfig:
     base_url: str = "https://api.openai.com/v1"
     organization: str | None = None
+    api_key: str | None = None
 
 @dataclass
 class AnthropicConfig:
@@ -39,6 +40,7 @@ class AnthropicConfig:
 @dataclass
 class GeminiConfig:
     base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    api_key: str | None = None
 
 @dataclass
 class LangChainConfig:
@@ -255,7 +257,7 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 
 
 def _resolve_api_key(config: AppConfig) -> None:
-    """Resolve LLM API key from env vars (provider-specific key takes priority)."""
+    """Resolve LLM API key. Priority: provider env var → generic env var → yaml value."""
     provider = config.llm.provider.lower()
     key_map = {
         "openai": "OPENAI_API_KEY",
@@ -263,9 +265,19 @@ def _resolve_api_key(config: AppConfig) -> None:
         "gemini": "GOOGLE_API_KEY",
     }
     env_var = key_map.get(provider, "DISTILL_LLM_API_KEY")
+
+    yaml_key: str | None = None
+    if provider == "gemini":
+        yaml_key = config.llm.gemini.api_key
+    elif provider == "openai":
+        yaml_key = config.llm.openai.api_key
+    elif provider == "anthropic":
+        yaml_key = None
+
     config.llm.api_key = (
         os.environ.get(env_var)
         or os.environ.get("DISTILL_LLM_API_KEY")
+        or yaml_key
     )
 
 
@@ -311,12 +323,16 @@ def _build_config(raw: dict[str, Any]) -> AppConfig:
         oa = llm["openai"]
         cfg.llm.openai.base_url = oa.get("base_url", cfg.llm.openai.base_url)
         cfg.llm.openai.organization = oa.get("organization")
+        cfg.llm.openai.api_key = oa.get("api_key")
     if "anthropic" in llm:
         an = llm["anthropic"]
         cfg.llm.anthropic.base_url = an.get("base_url", cfg.llm.anthropic.base_url)
         cfg.llm.anthropic.api_version = an.get("api_version", cfg.llm.anthropic.api_version)
     if "gemini" in llm:
-        cfg.llm.gemini.base_url = llm["gemini"].get("base_url", cfg.llm.gemini.base_url)
+        gm = llm["gemini"]
+        cfg.llm.gemini.base_url = gm.get("base_url", cfg.llm.gemini.base_url)
+        # Support both `api_key` (canonical) and legacy `GOOGLE_API_KEY` field name
+        cfg.llm.gemini.api_key = gm.get("api_key") or gm.get("GOOGLE_API_KEY")
     if "langchain" in llm:
         lc = llm["langchain"]
         cfg.llm.langchain.backend = lc.get("backend", cfg.llm.langchain.backend)

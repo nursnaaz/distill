@@ -35,7 +35,7 @@ function elapsed(ms: number): string {
 // ── Live progress panel ────────────────────────────────────────────────────────
 
 function AnalysisProgress({ steps, startedAt }: { steps: ProgressStep[]; startedAt: number }) {
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
@@ -189,6 +189,37 @@ export default function InputPage() {
       return;
     }
 
+    if (ext === "pdf") {
+      try {
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          "pdfjs-dist/build/pdf.worker.min.mjs",
+          import.meta.url
+        ).href;
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pages: string[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items
+            .map((item) => ("str" in item ? (item as { str: string }).str : ""))
+            .join(" ");
+          pages.push(pageText);
+        }
+        const extracted = pages.join("\n\n").trim();
+        if (!extracted) {
+          setError("No text found in this PDF. It may be a scanned image — try copy-pasting the text instead.");
+        } else {
+          setTranscript(extracted);
+        }
+      } catch {
+        setError("Could not read the PDF. Make sure it is a valid, text-based PDF (not a scanned image).");
+      }
+      e.target.value = "";
+      return;
+    }
+
     // Plain text fallback: .txt, .vtt, .srt
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -210,8 +241,9 @@ export default function InputPage() {
     try {
       await submitTranscript(transcript, studentName, sessionLabel || undefined);
       navigate("/summary");
-    } catch {
-      setError("Analysis failed. Check that LM Studio server is running and the model is loaded.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Analysis failed: ${msg}`);
     }
   };
 
@@ -221,7 +253,7 @@ export default function InputPage() {
         header={
           <Header
             variant="h1"
-            description="Paste a transcript or upload a file (.txt, .vtt, .docx). Distill extracts key concepts, builds a concept map, and generates an adaptive assessment."
+            description="Paste a transcript or upload a file (.txt, .vtt, .docx, .pdf). Distill extracts key concepts, builds a concept map, and generates an adaptive assessment."
           >
             Upload your class transcript
           </Header>
@@ -275,12 +307,12 @@ export default function InputPage() {
               disabled={isAnalyzing}
               iconName="upload"
             >
-              Upload file (.txt, .vtt, .docx)
+              Upload file (.txt, .vtt, .docx, .pdf)
             </Button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.vtt,.srt,.docx,.doc"
+              accept=".txt,.vtt,.srt,.docx,.doc,.pdf"
               style={{ display: "none" }}
               onChange={handleFileUpload}
             />

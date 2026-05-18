@@ -7,6 +7,7 @@ Schema mirrors memory_store.py exactly so both backends are interchangeable.
 
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 import aiosqlite
 
@@ -49,6 +50,7 @@ class SQLiteSessionStore(BaseSessionStore):
 
     def __init__(self, db_path: str):
         self._db_path = db_path
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
     async def _init_db(self, db: aiosqlite.Connection) -> None:
         await db.execute("PRAGMA journal_mode=WAL;")
