@@ -36,14 +36,18 @@ export default function ResultsPage() {
       : 0;
 
   // ── Per-topic breakdown for the table ──────────────────────────────────────
+  // FIX #1: Only count MCQ questions per topic (exclude teach_it_back)
+  // This ensures topic scores align with the overall MCQ percentage
   const topicMap: Record<string, { correct: number; total: number }> = {};
   result.questions.forEach((q) => {
+    // Only process MCQ questions for topic breakdown
+    if (q.type !== "mcq") return;
+    
     if (!topicMap[q.topic]) topicMap[q.topic] = { correct: 0, total: 0 };
     topicMap[q.topic].total += 1;
-    if (q.type === "mcq") {
-      const r = state.mcqResults[q.id];
-      if (r?.is_correct) topicMap[q.topic].correct += 1;
-    }
+    
+    const r = state.mcqResults[q.id];
+    if (r?.is_correct) topicMap[q.topic].correct += 1;
   });
   const topicRows = Object.entries(topicMap).map(([topic, scores]) => ({
     topic,
@@ -71,6 +75,11 @@ export default function ResultsPage() {
 
   const voiceColor = (score: number) =>
     score >= 3.5 ? "text-status-success" : score >= 2.5 ? "text-status-warning" : "text-status-error";
+
+  // ── FIX #2: Ensure topics are always current (fallback to derived topics if summary is empty) ──
+  const sessionTopics = result.summary.topics_covered && result.summary.topics_covered.length > 0
+    ? result.summary.topics_covered
+    : [...new Set(result.questions.filter(q => q.type === "mcq").map(q => q.topic))];
 
   return (
     <SpaceBetween size="l">
@@ -176,12 +185,13 @@ export default function ResultsPage() {
       )}
 
       {/* ── WhatsApp export ───────────────────────────────────────────────── */}
+      {/* FIX #2: Pass dynamic sessionTopics (with fallback) instead of cached data */}
       <WhatsAppExport
         studentName={state.studentName}
         sessionTitle={result.summary.session_title}
         mcqPct={mcqPct}
         voiceScore={avgVoice}
-        topics={result.summary.topics_covered}
+        topics={sessionTopics}
       />
 
       {/* ── Action buttons ────────────────────────────────────────────────── */}
