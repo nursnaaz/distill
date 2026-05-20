@@ -9,7 +9,8 @@ class AnalyzeRequest(BaseModel):
     transcript: str = Field(..., min_length=100, description="Full meeting transcript text")
     student_name: str = Field(default="Student", max_length=100)
     session_label: str | None = Field(default=None, max_length=200)
-
+    source_url: str | None = Field(default=None, description="Article URL if content was fetched from a link")  
+    source_type: str | None = Field(default=None, description="One of: paste | file | url")                    
 
 class MCQEvaluateRequest(BaseModel):
     session_id: str

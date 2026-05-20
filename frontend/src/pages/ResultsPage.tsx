@@ -12,6 +12,7 @@ import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import { useAppState } from "../context/AppContext";
 import InterviewDebrief from "../components/results/InterviewDebrief";
 import WhatsAppExport from "../components/results/WhatsAppExport";
+import SourceAttribution from "../components/SourceAttribution"; 
 
 export default function ResultsPage() {
   const state = useAppState();
@@ -74,6 +75,13 @@ export default function ResultsPage() {
 
   return (
     <SpaceBetween size="l">
+          {/* ── Source attribution — shown only when content came from a URL ── */}
+      {state.sourceUrl && (
+        <SourceAttribution
+          sourceUrl={state.sourceUrl}
+          title={result.summary.session_title}
+        />
+      )}
       {/* ── Score summary ─────────────────────────────────────────────────── */}
       <Container header={<Header variant="h1">Your Results</Header>}>
         <ColumnLayout columns={3} borders="vertical">

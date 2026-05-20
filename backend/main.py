@@ -25,7 +25,7 @@ from services.analyzer import TranscriptAnalyzer
 from services.assessor import QuestionGenerator
 from services.evaluator import AnswerEvaluator
 from storage.factory import create_session_store
-from routers import analyze, analyze_stream, transcribe, evaluate, sessions, system
+from routers import analyze, analyze_stream, transcribe, evaluate, sessions, system, fetch_url
 
 logger = get_logger(__name__)
 
@@ -103,6 +103,7 @@ def create_app() -> FastAPI:
     app.include_router(transcribe.router, prefix="/api", tags=["Transcription"])
     app.include_router(evaluate.router, prefix="/api", tags=["Evaluation"])
     app.include_router(sessions.router, prefix="/api", tags=["Sessions"])
+    app.include_router(fetch_url.router, prefix="/api", tags=["URL"])
 
     return app
 
