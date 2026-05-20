@@ -89,10 +89,15 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             completion_tokens = None
             model_id = self._model
 
+            reasoning_parts: list[str] = []
             stream = await self._client.chat.completions.create(**kwargs, stream=True)
             async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content_parts.append(chunk.choices[0].delta.content)
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        content_parts.append(delta.content)
+                    if hasattr(delta, "reasoning_content") and delta.reasoning_content:
+                        reasoning_parts.append(delta.reasoning_content)
                 if chunk.model:
                     model_id = chunk.model
                 # Grab usage from the final chunk (some providers include it there)
@@ -100,8 +105,12 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                     prompt_tokens = chunk.usage.prompt_tokens
                     completion_tokens = chunk.usage.completion_tokens
 
+            content = "".join(content_parts)
+            if not content and reasoning_parts:
+                content = "<think>" + "".join(reasoning_parts) + "</think>"
+
             return LLMResponse(
-                content="".join(content_parts),
+                content=content,
                 model=model_id,
                 provider=self._provider,
                 prompt_tokens=prompt_tokens,

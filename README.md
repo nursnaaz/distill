@@ -288,7 +288,7 @@ cd distill/backend
 **Terminal 2 — Frontend:**
 ```bash
 cd distill/frontend
-npm run dev
+`npm run dev`
 ```
 
 ### Step 9 — Open the app

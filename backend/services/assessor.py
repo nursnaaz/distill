@@ -6,6 +6,7 @@ Uses the questions_system.j2 prompt template.
 """
 
 import json
+import re
 from typing import Callable, Awaitable, Any
 from core.config import AppConfig
 from core.exceptions import EvaluationError
@@ -63,10 +64,11 @@ class QuestionGenerator:
         messages = [LLMMessage(role="user", content=prompt_text)]
 
         last_error = None
-        resp = None
+        last_raw = ""
         for attempt in range(1, self._config.llm.retry_attempts + 1):
             try:
                 resp = await self._llm.complete(messages)
+                last_raw = resp.content
                 raw = _extract_json(resp.content)
                 data = json.loads(raw)
                 questions_raw = data.get("questions", [])
@@ -81,15 +83,31 @@ class QuestionGenerator:
                 last_error = e
                 logger.warning("Question parse failed", attempt=attempt, error=str(e))
                 if attempt < self._config.llm.retry_attempts:
-                    messages = messages + [
-                        LLMMessage(role="assistant", content=resp.content if resp is not None else ""),
-                        LLMMessage(role="user", content="Return ONLY valid JSON with the questions array."),
-                    ]
+                    # Send a clean retry prompt — feeding the broken response back
+                    # confuses the model into returning empty content on the next attempt.
+                    messages = [LLMMessage(role="user", content=prompt_text)]
+
+        # Last resort: salvage any complete question objects from the broken response
+        salvaged = self._repair_questions_json(last_raw)
+        if salvaged:
+            logger.warning("Using salvaged questions", count=len(salvaged))
+            return salvaged
 
         raise EvaluationError(
             "Failed to generate questions after retries.",
             hint="Try a more capable model or reduce question count in config.yaml.",
         ) from last_error
+
+    def _repair_questions_json(self, text: str) -> list[Question]:
+        """Walk broken response and salvage any complete question objects."""
+        questions = []
+        for match in re.finditer(r'\{[^{}]*"question"[^{}]*\}', text, re.DOTALL):
+            try:
+                raw = json.loads(match.group())
+                questions.extend(self._parse_questions([raw]))
+            except Exception:
+                continue
+        return questions
 
     def _parse_questions(self, raw_list: list[dict]) -> list[Question]:
         """Convert raw dicts to validated Question models."""
