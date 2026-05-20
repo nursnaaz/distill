@@ -128,20 +128,60 @@ export default function TeachItBack({ question, sessionId, onAnswered, onNext }:
         {/* Post-evaluation result */}
         {result && (
           <SpaceBetween size="m">
+            {/* Verdict + score */}
             <Alert
               type={result.verdict_type as "success" | "info" | "warning" | "error"}
-              header={result.verdict}
+              header={`${result.verdict} — Score: ${result.weighted_score.toFixed(1)} / 5.0`}
             >
-              Score: {result.weighted_score.toFixed(1)} / 5.0
+              {/* Dimension breakdown */}
+              <SpaceBetween size="xxs">
+                {result.dimension_scores.map((d) => (
+                  <Box key={d.key} fontSize="body-s">
+                    {d.label}: {d.score} / 5
+                  </Box>
+                ))}
+              </SpaceBetween>
             </Alert>
-            <Button
-              variant="primary"
-              onClick={onNext}
-              iconAlign="right"
-              iconName="angle-right"
-            >
-              Next Question
-            </Button>
+
+            {/* Why you got this score */}
+            {result.narrative_debrief && (
+              <Alert type="info" header="Feedback on your answer">
+                {result.narrative_debrief.split("\n\n").map((para, i) => (
+                  <Box key={i} margin={{ bottom: "xs" }}>
+                    {para}
+                  </Box>
+                ))}
+              </Alert>
+            )}
+
+            {/* What to study */}
+            {result.study_recommendations.length > 0 && (
+              <Alert type="warning" header="What to review">
+                <ul style={{ margin: 0, paddingLeft: "1.2em" }}>
+                  {result.study_recommendations.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </Alert>
+            )}
+
+            {/* Follow-up question if provided */}
+            {result.follow_up_question && (
+              <Alert type="info" header="Think about this">
+                {result.follow_up_question}
+              </Alert>
+            )}
+
+            <Box float="right">
+              <Button
+                variant="primary"
+                onClick={onNext}
+                iconAlign="right"
+                iconName="angle-right"
+              >
+                Next Question
+              </Button>
+            </Box>
           </SpaceBetween>
         )}
       </SpaceBetween>

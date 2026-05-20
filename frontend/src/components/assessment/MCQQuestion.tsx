@@ -16,15 +16,17 @@ interface Props {
   sessionId: string;
   onAnswered: (result: MCQResult) => void;
   onNext: () => void;
+  conceptSnippet?: { concept: string; explanation: string };
 }
 
-export default function MCQQuestion({ question, sessionId, onAnswered, onNext }: Props) {
+export default function MCQQuestion({ question, sessionId, onAnswered, onNext, conceptSnippet }: Props) {
   const [selected, setSelected] = useState<AnswerKey | null>(null);
   const [result, setResult] = useState<MCQResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hintLevel, setHintLevel] = useState(0);
   const [hintVisible, setHintVisible] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   const handleSubmit = async () => {
     if (!selected) return;
@@ -98,21 +100,30 @@ export default function MCQQuestion({ question, sessionId, onAnswered, onNext }:
 
         {/* Post-answer feedback */}
         {result && (
-          <Alert
-            type={result.is_correct ? "success" : "error"}
-            header={
-              result.is_correct
-                ? "Correct!"
-                : `Incorrect — the answer is ${result.correct_answer}`
-            }
-          >
-            {result.explanation}
-            {result.hint && !result.is_correct && (
-              <Box margin={{ top: "xs" }} color="text-body-secondary">
-                Hint: {result.hint}
-              </Box>
+          <SpaceBetween size="s">
+            <Alert
+              type={result.is_correct ? "success" : "error"}
+              header={
+                result.is_correct
+                  ? "Correct!"
+                  : `Incorrect — the answer is ${result.correct_answer}`
+              }
+            >
+              {result.explanation}
+              {result.hint && !result.is_correct && (
+                <Box margin={{ top: "xs" }} color="text-body-secondary">
+                  Hint: {result.hint}
+                </Box>
+              )}
+            </Alert>
+
+            {/* Concept re-read block — only shown on wrong answers */}
+            {!result.is_correct && conceptSnippet && (
+              <Alert type="info" header={`Re-read this concept: ${conceptSnippet.concept}`}>
+                {conceptSnippet.explanation}
+              </Alert>
             )}
-          </Alert>
+          </SpaceBetween>
         )}
 
         <SpaceBetween direction="horizontal" size="s" alignItems="center">
@@ -131,7 +142,7 @@ export default function MCQQuestion({ question, sessionId, onAnswered, onNext }:
               >
                 {loading ? <Spinner /> : "Submit Answer"}
               </Button>
-            ) : (
+            ) : result.is_correct || acknowledged ? (
               <Button
                 variant="primary"
                 onClick={onNext}
@@ -139,6 +150,14 @@ export default function MCQQuestion({ question, sessionId, onAnswered, onNext }:
                 iconName="angle-right"
               >
                 Next Question
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => setAcknowledged(true)}
+                iconName="check"
+              >
+                I understand — continue
               </Button>
             )}
           </Box>

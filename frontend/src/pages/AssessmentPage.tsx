@@ -32,6 +32,12 @@ export default function AssessmentPage() {
   const currentIndex = state.currentQuestionIndex;
   const currentQuestion = questions[currentIndex];
   const isLastQuestion = currentIndex === questions.length - 1;
+
+  const conceptSnippet = currentQuestion
+    ? result?.summary.key_concepts.find(
+        (kc) => kc.topic.toLowerCase() === currentQuestion.topic.toLowerCase()
+      )
+    : undefined;
   // Show (index+1)/total so question 1 renders ~12% instead of an empty bar
   const progress = Math.round(((currentIndex + 1) / (questions.length || 1)) * 100);
 
@@ -83,6 +89,7 @@ export default function AssessmentPage() {
           key={currentQuestion.id}
           question={currentQuestion}
           sessionId={state.sessionId!}
+          conceptSnippet={conceptSnippet}
           onAnswered={(mcqResult) => {
             dispatch({ type: "SET_MCQ_RESULT", questionId: currentQuestion.id, result: mcqResult });
             // Pass topic + correctness so the adaptive difficulty hook updates accurately
