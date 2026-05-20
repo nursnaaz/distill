@@ -160,6 +160,11 @@ export default function InputPage() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── URL fetch state ──────────────────────────────────────────────────────────
+  const [urlInput, setUrlInput] = useState("");
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState<string | undefined>(undefined);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -178,11 +183,12 @@ export default function InputPage() {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         if (result.messages.length > 0) {
-          // Non-fatal warnings (e.g. unsupported formatting) — log, don't block
           console.warn("mammoth warnings:", result.messages);
         }
         setTranscript(result.value.trim());
-      } catch {
+        setSourceUrl(undefined);
+        dispatch({ type: "SET_SOURCE_URL", sourceUrl: undefined });
+       } catch {
         setError("Could not read the .docx file. Make sure it is a valid Word document.");
       }
       e.target.value = "";
@@ -193,9 +199,34 @@ export default function InputPage() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       setTranscript((evt.target?.result as string).trim());
+      setSourceUrl(undefined); // file upload clears any previous URL
+      dispatch({ type: "SET_SOURCE_URL", sourceUrl: undefined });
     };
     reader.readAsText(file);
     e.target.value = "";
+  };
+
+  // ── URL fetch handler ────────────────────────────────────────────────────────
+  const handleFetchUrl = async () => {
+    if (!urlInput.trim()) return;
+    setIsFetchingUrl(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/fetch-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail ?? "Failed to fetch URL.");
+      setTranscript(data.text);
+      setSourceUrl(data.url);
+      dispatch({ type: "SET_SOURCE_URL", sourceUrl: data.url });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not fetch the URL.");
+    } finally {
+      setIsFetchingUrl(false);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -208,7 +239,7 @@ export default function InputPage() {
     dispatch({ type: "SET_STUDENT_NAME", name: studentName });
 
     try {
-      await submitTranscript(transcript, studentName, sessionLabel || undefined);
+      await submitTranscript(transcript, studentName, sessionLabel || undefined, sourceUrl);
       navigate("/summary");
     } catch {
       setError("Analysis failed. Check that LM Studio server is running and the model is loaded.");
@@ -261,13 +292,17 @@ export default function InputPage() {
           >
             <Textarea
               value={transcript}
-              onChange={({ detail }) => setTranscript(detail.value)}
+              onChange={({ detail }) => {
+                setTranscript(detail.value);
+                setSourceUrl(undefined); // manual edit clears URL attribution
+              }}
               placeholder="[00:00] Teacher: Today we're going to cover Retrieval Augmented Generation, or RAG..."
               rows={16}
               disabled={isAnalyzing}
             />
           </FormField>
 
+          {/* File upload */}
           <SpaceBetween direction="horizontal" size="xs" alignItems="center">
             <Button
               variant="normal"
@@ -288,6 +323,33 @@ export default function InputPage() {
               {transcript.length > 0 ? `${transcript.length} characters` : "No file selected"}
             </Box>
           </SpaceBetween>
+{/* URL fetch */}
+<div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+  <div style={{ flex: 1 }}>
+    <Input
+      value={urlInput}
+      onChange={({ detail }) => setUrlInput(detail.value)}
+      placeholder="Or paste a Medium / Substack / article URL…"
+      disabled={isAnalyzing || isFetchingUrl}
+      type="url"
+    />
+  </div>
+  <Button
+    variant="normal"
+    onClick={handleFetchUrl}
+    loading={isFetchingUrl}
+    disabled={!urlInput.trim() || isAnalyzing || isFetchingUrl}
+    iconName="external"
+  >
+    Fetch Article
+  </Button>
+  {sourceUrl && (
+    <Box color="text-status-success" fontSize="body-s">
+      ✓ Article loaded
+    </Box>
+  )}
+</div>
+
         </SpaceBetween>
       </Container>
 

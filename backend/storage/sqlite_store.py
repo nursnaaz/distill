@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS sessions (
     summary         TEXT NOT NULL,   -- JSON object
     concept_map     TEXT NOT NULL,   -- JSON object
     mcq_score_pct   REAL,
-    overall_verdict TEXT
+    overall_verdict TEXT,
+    source_url      TEXT,   -- ← add
+    source_type     TEXT    -- ← add
 );
 """
 
@@ -65,6 +67,8 @@ class SQLiteSessionStore(BaseSessionStore):
         questions: list[dict],
         summary: dict,
         concept_map: dict,
+        source_url: str | None = None,
+        source_type: str | None = None,
     ) -> SessionMeta:
         now = datetime.now(timezone.utc)
         async with aiosqlite.connect(self._db_path) as db:
@@ -72,8 +76,8 @@ class SQLiteSessionStore(BaseSessionStore):
             await db.execute(
                 """INSERT OR IGNORE INTO sessions
                    (session_id, student_name, session_label, created_at,
-                    topics_covered, questions, summary, concept_map)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    topics_covered, questions, summary, concept_map, source_url, source_type)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     session_id,
                     student_name,
@@ -83,6 +87,8 @@ class SQLiteSessionStore(BaseSessionStore):
                     json.dumps(questions),
                     json.dumps(summary),
                     json.dumps(concept_map),
+                    source_url, 
+                    source_type,
                 ),
             )
             await db.commit()
@@ -93,6 +99,8 @@ class SQLiteSessionStore(BaseSessionStore):
             session_label=session_label,
             created_at=now,
             topics_covered=topics_covered,
+            source_url=source_url,
+            source_type=source_type,
         )
 
     async def get_session(self, session_id: str) -> dict | None:
@@ -117,6 +125,8 @@ class SQLiteSessionStore(BaseSessionStore):
                 "concept_map": json.loads(row["concept_map"]),
                 "mcq_score_pct": row["mcq_score_pct"],
                 "overall_verdict": row["overall_verdict"],
+                "source_url": row["source_url"],
+                "source_type": row["source_type"],
                 "mcq_results": {},
                 "voice_results": {},
             }

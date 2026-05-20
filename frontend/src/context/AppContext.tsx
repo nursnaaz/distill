@@ -12,6 +12,7 @@ export interface ProgressStep extends ProgressEvent {
 export interface AppState {
   sessionId: string | null;
   studentName: string;
+  sourceUrl: string | undefined;
   analyzeResult: AnalyzeResult | null;
   currentQuestionIndex: number;
   currentDifficulty: Difficulty;
@@ -29,6 +30,7 @@ export interface AppState {
 const initialState: AppState = {
   sessionId: null,
   studentName: "Student",
+  sourceUrl: undefined,
   analyzeResult: null,
   currentQuestionIndex: 0,
   currentDifficulty: "medium",
@@ -47,6 +49,7 @@ const initialState: AppState = {
 
 export type AppAction =
   | { type: "SET_STUDENT_NAME"; name: string }
+  | { type: "SET_SOURCE_URL"; sourceUrl: string | undefined }
   | { type: "SET_ANALYZING"; value: boolean }
   | { type: "SET_TRANSCRIBING"; value: boolean }
   | { type: "SET_EVALUATING"; value: boolean }
@@ -141,6 +144,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
     case "RESET":
       return structuredClone(initialState);
+
+    case "SET_SOURCE_URL":
+      return { ...state, sourceUrl: action.sourceUrl }; 
 
     default:
       return state;

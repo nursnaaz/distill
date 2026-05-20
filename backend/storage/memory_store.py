@@ -37,6 +37,8 @@ class MemorySessionStore(BaseSessionStore):
         questions: list[dict],
         summary: dict,
         concept_map: dict,
+        source_url: str | None = None,
+        source_type: str | None = None, 
     ) -> SessionMeta:
         async with self._lock:
             if len(self._sessions) >= self._max:
@@ -56,6 +58,8 @@ class MemorySessionStore(BaseSessionStore):
                 "concept_map": concept_map,  # ConceptMapResponse dict
                 "mcq_results": {},           # {question_id: result_dict}
                 "voice_results": {},         # {question_id: result_dict}
+                "source_url": source_url,    # ← add
+                "source_type": source_type,  # ← add
             }
             logger.info("Session saved", session_id=session_id, student=student_name)
             return SessionMeta(
