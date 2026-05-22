@@ -11,6 +11,7 @@ import Alert from "@cloudscape-design/components/alert";
 import ColumnLayout from "@cloudscape-design/components/column-layout";
 import Box from "@cloudscape-design/components/box";
 import { useSession } from "../hooks/useSession";
+import { transcribeAudio } from "../api/transcribe";
 import { useAppDispatch } from "../context/AppContext";
 import type { ProgressStep } from "../context/AppContext";
 
@@ -158,6 +159,7 @@ export default function InputPage() {
   const [studentName, setStudentName] = useState("Student");
   const [sessionLabel, setSessionLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false); 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,6 +167,21 @@ export default function InputPage() {
     if (!file) return;
 
     const ext = file.name.split(".").pop()?.toLowerCase();
+
+            if (["mp3", "mp4", "wav", "m4a", "webm"].includes(ext ?? "")) {
+          try {
+            setError(null);
+            setIsTranscribing(true); 
+            const result = await transcribeAudio(file, file.name);
+            setTranscript(result.transcript.trim());
+          } catch {
+            setError("Could not transcribe audio. Make sure backend is running.");
+          } finally {
+            setIsTranscribing(false);
+            }
+          e.target.value = "";
+          return;
+        }
 
     if (ext === "doc") {
       setError(".doc format is not supported. Open the file in Word and save it as .docx, then upload again.");
@@ -256,7 +273,7 @@ export default function InputPage() {
 
           <FormField
             label="Transcript"
-            description="Minimum 100 characters. Supports Teams, Zoom, Google Meet, and manual transcripts."
+            description="Minimum 100 characters. Supports Teams, Zoom, Google Meet, manual transcripts, and audio files (.mp3, .wav, .mp4, .m4a)."
             stretch
           >
             <Textarea
@@ -272,15 +289,17 @@ export default function InputPage() {
             <Button
               variant="normal"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || isTranscribing}
+              loading={isTranscribing}
+              loadingText="Transcribing audio..."
               iconName="upload"
             >
-              Upload file (.txt, .vtt, .docx)
+              Upload file (.txt, .vtt, .docx, .mp3, .wav, .mp4)
             </Button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.vtt,.srt,.docx,.doc"
+              accept=".txt,.vtt,.srt,.docx,.doc,.mp3,.mp4,.wav,.m4a,.webm"
               style={{ display: "none" }}
               onChange={handleFileUpload}
             />
